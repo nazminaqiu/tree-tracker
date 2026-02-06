@@ -12,7 +12,7 @@ If you received this file in error, please delete it.
 
 <html lang="en">
 <head>
-    <meta name=\"robots\" content=\"noindex,nofollow\" />
+    <meta name="robots" content="noindex,nofollow" />
 <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tree Tracking System — Client Preview</title>
@@ -94,14 +94,20 @@ If you received this file in error, please delete it.
             transition: background 0.3s ease, color 0.3s ease;
         }
 
-        .theme-toggle {
+        /* Updated header controls layout for two buttons */
+        .header-controls {
             position: absolute;
             top: 30px;
             right: 30px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-btn {
             background: rgba(255, 255, 255, 0.2);
             border: 2px solid rgba(255, 255, 255, 0.3);
             color: white;
-            padding: 10px 20px;
+            padding: 8px 16px;
             border-radius: 25px;
             cursor: pointer;
             font-size: 14px;
@@ -109,12 +115,17 @@ If you received this file in error, please delete it.
             transition: all 0.3s;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
 
-        .theme-toggle:hover {
+        .control-btn:hover {
             background: rgba(255, 255, 255, 0.3);
             transform: scale(1.05);
+        }
+
+        /* Backward compatibility for original CSS class if used elsewhere */
+        .theme-toggle {
+            /* Styles merged into .control-btn */
         }
 
         #dbStatus {
@@ -140,6 +151,7 @@ If you received this file in error, please delete it.
             background: var(--bg-light);
             border-bottom: 2px solid var(--border-color);
             transition: background 0.3s ease, border-color 0.3s ease;
+            overflow-x: auto; /* Allow scrolling on small screens */
         }
 
         .nav-tab {
@@ -153,6 +165,7 @@ If you received this file in error, please delete it.
             font-weight: 600;
             color: var(--text-secondary);
             transition: all 0.3s;
+            white-space: nowrap;
         }
 
         .nav-tab:hover {
@@ -318,6 +331,13 @@ If you received this file in error, please delete it.
             border-color: #ffc107;
             background: #fff3cd;
             animation: pulse 1s infinite;
+        }
+        
+        /* Dark mode overrides for highlighted items */
+        [data-theme="dark"] .tree-list-item.highlighted {
+            background: #4a3e10;
+            border-color: #ffd54f;
+            color: #fff;
         }
 
         @keyframes pulse {
@@ -720,9 +740,11 @@ If you received this file in error, please delete it.
                 font-size: 1.8em;
             }
 
-            .theme-toggle {
+            .header-controls {
                 position: static;
-                margin: 0 auto 15px;
+                justify-content: center;
+                margin-bottom: 15px;
+                flex-wrap: wrap;
             }
 
             #dbStatus {
@@ -798,46 +820,51 @@ If you received this file in error, please delete it.
     <div id="clientPreviewTopBar" style="position:sticky;top:0;z-index:9999;background:#111827;color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 2px 10px rgba(0,0,0,.15);">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <span style="font-weight:700;letter-spacing:.2px;">Client Preview</span>
-        <span style="opacity:.85;">Try the dashboard, add trees, and open Map View. Data saves in your browser only. <strong>Evaluation only • Not licensed for reuse</strong>.</span>
+        <span style="opacity:.85;" data-i18n="previewText">Try the dashboard, add trees, and open Map View. Data saves in your browser only. Evaluation only.</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
         
-        <button onclick="sendFeedbackEmail()" style="background:#2563EB;color:#fff;border:0;border-radius:10px;padding:8px 10px;cursor:pointer;">✉️ Send feedback</button>
-<button onclick="resetPreviewData()" style="background:#374151;color:#fff;border:0;border-radius:10px;padding:8px 10px;cursor:pointer;">Reset demo data</button>
-        <button onclick="dismissClientPreviewBar()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:8px 10px;cursor:pointer;">Dismiss</button>
+        <button onclick="sendFeedbackEmail()" style="background:#2563EB;color:#fff;border:0;border-radius:10px;padding:8px 10px;cursor:pointer;">✉️ <span data-i18n="feedback">Send feedback</span></button>
+<button onclick="resetPreviewData()" style="background:#374151;color:#fff;border:0;border-radius:10px;padding:8px 10px;cursor:pointer;" data-i18n="resetData">Reset demo data</button>
+        <button onclick="dismissClientPreviewBar()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:8px 10px;cursor:pointer;" data-i18n="dismiss">Dismiss</button>
       </div>
     </div>
     
     <div class="container">
         <header>
-            <button class="theme-toggle" onclick="toggleTheme()">
-                <span id="themeIcon">🌙</span>
-                <span id="themeText">Dark Mode</span>
-            </button>
-            <div style="position: absolute; top: 30px; left: 30px; display: flex; align-items: center; gap: 8px; font-size: 12px; opacity: 0.9;">
-                <span id="dbStatus">💾 Using Demo Data</span>
+            <div class="header-controls">
+                <button class="control-btn" onclick="toggleLanguage()">
+                    <span id="langText">EN</span>
+                </button>
+                <button class="control-btn" onclick="toggleTheme()">
+                    <span id="themeIcon">🌙</span>
+                    <span id="themeText" data-i18n="darkMode">Dark Mode</span>
+                </button>
             </div>
-            <h1>🌳 Tree Tracking System</h1>
-            <p>Monitor and manage your orchard with interactive mapping</p>
-        </header>
 
+            <div style="position: absolute; top: 30px; left: 30px; display: flex; align-items: center; gap: 8px; font-size: 12px; opacity: 0.9;">
+                <span id="dbStatus" data-i18n="dbStatus">💾 Using Demo Data</span>
+            </div>
+            <h1 data-i18n="appTitle">🌳 Tree Tracking System</h1>
+            <p data-i18n="appSubtitle">Monitor and manage your orchard with interactive mapping</p>
+        </header>
 
         <div id="demoBanner" class="demo-banner" style="display:none;">
             <div class="demo-banner__text">
-                <strong>Showing demo data.</strong> Add your own trees, or load your saved trees from Firestore.
+                <strong data-i18n="demoBannerTitle">Showing demo data.</strong> <span data-i18n="demoBannerText">Add your own trees, or load your saved trees from Firestore.</span>
             </div>
             <div class="demo-banner__actions">
-                <button class="demo-banner__btn" id="loadFromFirestoreBtn" type="button">Load from Firestore</button>
-                <button class="demo-banner__btn secondary" id="dismissDemoBannerBtn" type="button">Dismiss</button>
+                <button class="demo-banner__btn" id="loadFromFirestoreBtn" type="button" data-i18n="loadFirestore">Load from Firestore</button>
+                <button class="demo-banner__btn secondary" id="dismissDemoBannerBtn" type="button" data-i18n="dismiss">Dismiss</button>
             </div>
         </div>
 
         <div class="nav-tabs">
-            <button class="nav-tab active" onclick="switchTab(event, 'dashboard')">📊 Dashboard</button>
-            <button class="nav-tab" onclick="switchTab(event, 'mapTab')">🗺️ Map View</button>
-            <button class="nav-tab" onclick="switchTab(event, 'addTree')">➕ Add Tree</button>
-            <button class="nav-tab" onclick="switchTab(event, 'viewTrees')">🌲 View Trees</button>
-            <button class="nav-tab" onclick="switchTab(event, 'reports')">📋 Reports</button>
+            <button class="nav-tab active" onclick="switchTab(event, 'dashboard')" data-i18n="tabDashboard">📊 Dashboard</button>
+            <button class="nav-tab" onclick="switchTab(event, 'mapTab')" data-i18n="tabMap">🗺️ Map View</button>
+            <button class="nav-tab" onclick="switchTab(event, 'addTree')" data-i18n="tabAdd">➕ Add Tree</button>
+            <button class="nav-tab" onclick="switchTab(event, 'viewTrees')" data-i18n="tabView">🌲 View Trees</button>
+            <button class="nav-tab" onclick="switchTab(event, 'reports')" data-i18n="tabReports">📋 Reports</button>
         </div>
 
         <!-- Map Tab -->
@@ -845,12 +872,12 @@ If you received this file in error, please delete it.
             <div class="map-container">
                 <div id="map"></div>
                 <div class="map-sidebar">
-                    <h3>Filter by Fruit Type</h3>
+                    <h3 data-i18n="filterFruit">Filter by Fruit Type</h3>
                     <div class="fruit-filter-grid" id="fruitFilters">
                         <!-- Fruit filters will be populated here -->
                     </div>
 
-                    <h3>Trees on Map</h3>
+                    <h3 data-i18n="treesOnMap">Trees on Map</h3>
                     <div id="treeList">
                         <!-- Tree list will be populated here -->
                     </div>
@@ -860,54 +887,54 @@ If you received this file in error, please delete it.
 
         <!-- Dashboard Tab -->
         <div id="dashboard" class="tab-content active">
-            <h2 style="margin-bottom: 25px; color: #2d5016;">Dashboard Overview</h2>
+            <h2 style="margin-bottom: 25px; color: #2d5016;" data-i18n="dashboardOverview">Dashboard Overview</h2>
             <div class="stats-grid">
                 <div class="stat-card">
                     <h3 id="totalTrees">0</h3>
-                    <p>Total Trees</p>
+                    <p data-i18n="statTotal">Total Trees</p>
                 </div>
                 <div class="stat-card">
                     <h3 id="healthyTrees">0</h3>
-                    <p>Healthy Trees</p>
+                    <p data-i18n="statHealthy">Healthy Trees</p>
                 </div>
                 <div class="stat-card">
                     <h3 id="needsAttention">0</h3>
-                    <p>Needs Attention</p>
+                    <p data-i18n="statAttention">Needs Attention</p>
                 </div>
                 <div class="stat-card">
                     <h3 id="uniqueFruits">0</h3>
-                    <p>Fruit Varieties</p>
+                    <p data-i18n="statVarieties">Fruit Varieties</p>
                 </div>
             </div>
 
-            <h3 style="margin-bottom: 20px; color: #2d5016;">Recent Activity</h3>
+            <h3 style="margin-bottom: 20px; color: #2d5016;" data-i18n="recentActivity">Recent Activity</h3>
             <div id="recentActivity">
                 <div class="empty-state">
-                    <h3>No trees tracked yet</h3>
-                    <p>Start by adding your first tree in the "Add Tree" tab</p>
+                    <h3 data-i18n="noTreesTitle">No trees tracked yet</h3>
+                    <p data-i18n="noTreesText">Start by adding your first tree in the "Add Tree" tab</p>
                 </div>
             </div>
         </div>
 
         <!-- Add Tree Tab -->
         <div id="addTree" class="tab-content">
-            <h2 style="margin-bottom: 25px; color: #2d5016;">Add New Tree</h2>
+            <h2 style="margin-bottom: 25px; color: #2d5016;" data-i18n="addNewTree">Add New Tree</h2>
             
             <div class="location-help">
-                <h4>📍 Getting GPS Coordinates</h4>
-                <p>You can get your current location or enter coordinates manually.</p>
-                <p><strong>Format:</strong> latitude, longitude (e.g., 3.1478, 101.6953 for Selangor)</p>
-                <button class="btn-locate" onclick="getCurrentLocation()">📍 Use My Current Location</button>
+                <h4 data-i18n="gpsTitle">📍 Getting GPS Coordinates</h4>
+                <p data-i18n="gpsText1">You can get your current location or enter coordinates manually.</p>
+                <p><strong data-i18n="format">Format:</strong> latitude, longitude (e.g., 3.1478, 101.6953 for Selangor)</p>
+                <button class="btn-locate" onclick="getCurrentLocation()" data-i18n="useLocation">📍 Use My Current Location</button>
             </div>
 
             <form id="addTreeForm">
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="treeId">Tree ID *</label>
+                        <label for="treeId" data-i18n="labelId">Tree ID *</label>
                         <input type="text" id="treeId" required placeholder="e.g., TREE-001">
                     </div>
                     <div class="form-group">
-                        <label for="fruitType">Fruit Type *</label>
+                        <label for="fruitType" data-i18n="labelFruit">Fruit Type *</label>
                         <input type="text" id="fruitType" required placeholder="e.g., Mango, Apple, Orange" list="fruitSuggestions">
                         <datalist id="fruitSuggestions">
                             <option value="🥭 Mango">
@@ -922,113 +949,116 @@ If you received this file in error, please delete it.
                             <option value="🍒 Cherry">
                             <option value="🥑 Avocado">
                             <option value="🍈 Melon">
+                            <option value="Durian">
+                            <option value="Rambutan">
+                            <option value="Mangosteen">
                         </datalist>
                     </div>
                     <div class="form-group">
-                        <label for="variety">Variety/Cultivar</label>
+                        <label for="variety" data-i18n="labelVariety">Variety/Cultivar</label>
                         <input type="text" id="variety" placeholder="e.g., Alphonso, Fuji">
                     </div>
                     <div class="form-group">
-                        <label for="plantedDate">Planted Date</label>
+                        <label for="plantedDate" data-i18n="labelPlanted">Planted Date</label>
                         <input type="date" id="plantedDate">
                     </div>
                     <div class="form-group">
-                        <label for="height">Height (meters)</label>
+                        <label for="height" data-i18n="labelHeight">Height (meters)</label>
                         <input type="number" id="height" step="0.1" placeholder="e.g., 5.5">
                     </div>
                     <div class="form-group">
-                        <label for="diameter">Trunk Diameter (cm)</label>
+                        <label for="diameter" data-i18n="labelDiameter">Trunk Diameter (cm)</label>
                         <input type="number" id="diameter" step="0.1" placeholder="e.g., 30.5">
                     </div>
                     <div class="form-group">
-                        <label for="location">Location Name</label>
+                        <label for="location" data-i18n="labelLocation">Location Name</label>
                         <input type="text" id="location" placeholder="e.g., North Field, Row 3">
                     </div>
                     <div class="form-group">
-                        <label for="coordinates">GPS Coordinates * (latitude, longitude)</label>
+                        <label for="coordinates" data-i18n="labelCoords">GPS Coordinates * (latitude, longitude)</label>
                         <input type="text" id="coordinates" required placeholder="e.g., 3.1478, 101.6953">
                     </div>
                     <div class="form-group">
-                        <label for="healthStatus">Health Status *</label>
+                        <label for="healthStatus" data-i18n="labelHealth">Health Status *</label>
                         <select id="healthStatus" required>
-                            <option value="">Select Status</option>
-                            <option value="healthy">Healthy</option>
-                            <option value="fair">Fair</option>
-                            <option value="poor">Poor</option>
+                            <option value="" data-i18n="selectStatus">Select Status</option>
+                            <option value="healthy" data-i18n="statusHealthy">Healthy</option>
+                            <option value="fair" data-i18n="statusFair">Fair</option>
+                            <option value="poor" data-i18n="statusPoor">Poor</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="notes">Notes</label>
+                    <label for="notes" data-i18n="labelNotes">Notes</label>
                     <textarea id="notes" placeholder="Add any additional observations, maintenance notes, or special care instructions..."></textarea>
                 </div>
 
                 <button type="submit" class="btn btn-primary">
-                    <span>➕</span> Add Tree to System
+                    <span data-i18n="btnAdd">➕ Add Tree to System</span>
                 </button>
             </form>
         </div>
 
         <!-- View Trees Tab -->
         <div id="viewTrees" class="tab-content">
-            <h2 style="margin-bottom: 25px; color: #2d5016;">All Trees</h2>
+            <h2 style="margin-bottom: 25px; color: #2d5016;" data-i18n="allTrees">All Trees</h2>
             
             <div class="search-filter">
                 <input type="text" id="searchInput" placeholder="🔍 Search by ID, fruit type, or location...">
                 <select id="filterStatus">
-                    <option value="">All Status</option>
-                    <option value="healthy">Healthy</option>
-                    <option value="fair">Fair</option>
-                    <option value="poor">Poor</option>
+                    <option value="" data-i18n="allStatus">All Status</option>
+                    <option value="healthy" data-i18n="statusHealthy">Healthy</option>
+                    <option value="fair" data-i18n="statusFair">Fair</option>
+                    <option value="poor" data-i18n="statusPoor">Poor</option>
                 </select>
                 <select id="sortBy">
-                    <option value="newest">Newest First</option>
-                    <option value="oldest">Oldest First</option>
-                    <option value="fruit">Fruit Type</option>
-                    <option value="height">Height</option>
+                    <option value="newest" data-i18n="sortNewest">Newest First</option>
+                    <option value="oldest" data-i18n="sortOldest">Oldest First</option>
+                    <option value="fruit" data-i18n="sortFruit">Fruit Type</option>
+                    <option value="height" data-i18n="sortHeight">Height</option>
                 </select>
             </div>
 
             <div id="treesContainer" class="tree-grid">
                 <div class="empty-state">
-                    <h3>No trees found</h3>
-                    <p>Add some trees to get started</p>
+                    <h3 data-i18n="noTreesFound">No trees found</h3>
+                    <p data-i18n="addSomeTrees">Add some trees to get started</p>
                 </div>
             </div>
         </div>
 
         <!-- Reports Tab -->
         <div id="reports" class="tab-content">
-            <h2 style="margin-bottom: 25px; color: #2d5016;">Reports & Analytics</h2>
+            <h2 style="margin-bottom: 25px; color: #2d5016;" data-i18n="reportsTitle">Reports & Analytics</h2>
             
             <div class="stats-grid">
                 <div class="stat-card">
                     <h3 id="avgHeight">0</h3>
-                    <p>Average Height (m)</p>
+                    <p data-i18n="avgHeight">Average Height (m)</p>
                 </div>
                 <div class="stat-card">
                     <h3 id="avgDiameter">0</h3>
-                    <p>Average Diameter (cm)</p>
+                    <p data-i18n="avgDiameter">Average Diameter (cm)</p>
                 </div>
                 <div class="stat-card">
                     <h3 id="healthPercentage">0%</h3>
-                    <p>Health Rate</p>
+                    <p data-i18n="healthRate">Health Rate</p>
                 </div>
                 <div class="stat-card">
                     <h3 id="oldestTree">-</h3>
-                    <p>Oldest Tree</p>
+                    <p data-i18n="oldestTree">Oldest Tree</p>
                 </div>
             </div>
 
             <div style="margin-top: 30px;">
-                <h3 style="margin-bottom: 15px; color: #2d5016;">Fruit Type Distribution</h3>
+                <h3 style="margin-bottom: 15px; color: #2d5016;" data-i18n="fruitDistribution">Fruit Type Distribution</h3>
                 <div id="fruitReport"></div>
             </div>
 
             <div style="margin-top: 30px;">
                 <button class="btn btn-primary" onclick="exportData()">
-                    <span>📥</span> Export Data as JSON
+                    <span data-i18n="btnExport">📥 Export Data as JSON</span>
                 </button>
             </div>
         </div>
@@ -1038,7 +1068,7 @@ If you received this file in error, please delete it.
     <div id="treeModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Tree Details</h2>
+                <h2 data-i18n="treeDetails">Tree Details</h2>
                 <button class="close-modal" onclick="closeModal()">&times;</button>
             </div>
             <div id="modalBody"></div>
@@ -1046,6 +1076,222 @@ If you received this file in error, please delete it.
     </div>
 
     <script>
+        // --- TRANSLATION DATA ---
+        const translations = {
+            en: {
+                appTitle: "🌳 Tree Tracking System",
+                appSubtitle: "Monitor and manage your orchard with interactive mapping",
+                previewText: "Try the dashboard, add trees, and open Map View. Data saves in your browser only. Evaluation only.",
+                feedback: "Send feedback",
+                resetData: "Reset demo data",
+                dismiss: "Dismiss",
+                darkMode: "Dark Mode",
+                lightMode: "Light Mode",
+                dbStatus: "💾 Using Demo Data",
+                demoBannerTitle: "Showing demo data.",
+                demoBannerText: "Add your own trees, or load your saved trees from Firestore.",
+                loadFirestore: "Load from Firestore",
+                tabDashboard: "📊 Dashboard",
+                tabMap: "🗺️ Map View",
+                tabAdd: "➕ Add Tree",
+                tabView: "🌲 View Trees",
+                tabReports: "📋 Reports",
+                filterFruit: "Filter by Fruit Type",
+                treesOnMap: "Trees on Map",
+                dashboardOverview: "Dashboard Overview",
+                statTotal: "Total Trees",
+                statHealthy: "Healthy Trees",
+                statAttention: "Needs Attention",
+                statVarieties: "Fruit Varieties",
+                recentActivity: "Recent Activity",
+                noTreesTitle: "No trees tracked yet",
+                noTreesText: "Start by adding your first tree in the 'Add Tree' tab",
+                addNewTree: "Add New Tree",
+                gpsTitle: "📍 Getting GPS Coordinates",
+                gpsText1: "You can get your current location or enter coordinates manually.",
+                format: "Format:",
+                useLocation: "📍 Use My Current Location",
+                labelId: "Tree ID *",
+                labelFruit: "Fruit Type *",
+                labelVariety: "Variety/Cultivar",
+                labelPlanted: "Planted Date",
+                labelHeight: "Height (meters)",
+                labelDiameter: "Trunk Diameter (cm)",
+                labelLocation: "Location Name",
+                labelCoords: "GPS Coordinates * (latitude, longitude)",
+                labelHealth: "Health Status *",
+                selectStatus: "Select Status",
+                statusHealthy: "Healthy",
+                statusFair: "Fair",
+                statusPoor: "Poor",
+                labelNotes: "Notes",
+                btnAdd: "➕ Add Tree to System",
+                allTrees: "All Trees",
+                allStatus: "All Status",
+                sortNewest: "Newest First",
+                sortOldest: "Oldest First",
+                sortFruit: "Fruit Type",
+                sortHeight: "Height",
+                noTreesFound: "No trees found",
+                addSomeTrees: "Add some trees to get started",
+                reportsTitle: "Reports & Analytics",
+                avgHeight: "Average Height (m)",
+                avgDiameter: "Average Diameter (cm)",
+                healthRate: "Health Rate",
+                oldestTree: "Oldest Tree",
+                fruitDistribution: "Fruit Type Distribution",
+                btnExport: "📥 Export Data as JSON",
+                treeDetails: "Tree Details",
+                btnView: "View Details",
+                btnNavigate: "🧭 Navigate",
+                btnDelete: "Delete",
+                labelDateAdded: "Date Added",
+                msgTreeAdded: "Tree added successfully! 🌳",
+                msgDeleteConfirm: "Are you sure you want to delete this tree? This action cannot be undone.",
+                msgDeleted: "Tree deleted successfully",
+                searchPlaceholder: "🔍 Search by ID, fruit type, or location...",
+                notesPlaceholder: "Add any additional observations, maintenance notes, or special care instructions...",
+                noLocation: "No location name"
+            },
+            ms: {
+                appTitle: "🌳 Sistem Penjejakan Pokok",
+                appSubtitle: "Pantau dan urus kebun anda dengan pemetaan interaktif",
+                previewText: "Cuba papan pemuka, tambah pokok, dan buka Paparan Peta. Data disimpan di pelayar sahaja. Untuk penilaian.",
+                feedback: "Maklum Balas",
+                resetData: "Set Semula Data",
+                dismiss: "Tutup",
+                darkMode: "Mod Gelap",
+                lightMode: "Mod Cerah",
+                dbStatus: "💾 Menggunakan Data Demo",
+                demoBannerTitle: "Menunjukkan data demo.",
+                demoBannerText: "Tambah pokok anda sendiri, atau muatkan dari Firestore.",
+                loadFirestore: "Muat dari Firestore",
+                tabDashboard: "📊 Papan Pemuka",
+                tabMap: "🗺️ Peta",
+                tabAdd: "➕ Tambah Pokok",
+                tabView: "🌲 Senarai Pokok",
+                tabReports: "📋 Laporan",
+                filterFruit: "Tapis Mengikut Buah",
+                treesOnMap: "Pokok di Peta",
+                dashboardOverview: "Ringkasan Papan Pemuka",
+                statTotal: "Jumlah Pokok",
+                statHealthy: "Pokok Sihat",
+                statAttention: "Perlu Perhatian",
+                statVarieties: "Variasi Buah",
+                recentActivity: "Aktiviti Terkini",
+                noTreesTitle: "Tiada pokok dikesan",
+                noTreesText: "Mula dengan menambah pokok di tab 'Tambah Pokok'",
+                addNewTree: "Tambah Pokok Baru",
+                gpsTitle: "📍 Dapatkan Koordinat GPS",
+                gpsText1: "Anda boleh guna lokasi semasa atau masukkan manual.",
+                format: "Format:",
+                useLocation: "📍 Guna Lokasi Semasa Saya",
+                labelId: "ID Pokok *",
+                labelFruit: "Jenis Buah *",
+                labelVariety: "Varieti/Kultivar",
+                labelPlanted: "Tarikh Ditanam",
+                labelHeight: "Ketinggian (meter)",
+                labelDiameter: "Diameter Batang (cm)",
+                labelLocation: "Nama Lokasi",
+                labelCoords: "Koordinat GPS * (latitud, longitud)",
+                labelHealth: "Status Kesihatan *",
+                selectStatus: "Pilih Status",
+                statusHealthy: "Sihat",
+                statusFair: "Sederhana",
+                statusPoor: "Lemah",
+                labelNotes: "Nota",
+                btnAdd: "➕ Tambah Pokok ke Sistem",
+                allTrees: "Semua Pokok",
+                allStatus: "Semua Status",
+                sortNewest: "Terkini",
+                sortOldest: "Terlama",
+                sortFruit: "Jenis Buah",
+                sortHeight: "Ketinggian",
+                noTreesFound: "Tiada pokok dijumpai",
+                addSomeTrees: "Tambah pokok untuk bermula",
+                reportsTitle: "Laporan & Analitik",
+                avgHeight: "Purata Tinggi (m)",
+                avgDiameter: "Purata Diameter (cm)",
+                healthRate: "Kadar Kesihatan",
+                oldestTree: "Pokok Tertua",
+                fruitDistribution: "Taburan Jenis Buah",
+                btnExport: "📥 Eksport Data JSON",
+                treeDetails: "Maklumat Pokok",
+                btnView: "Lihat",
+                btnNavigate: "🧭 Arah",
+                btnDelete: "Padam",
+                labelDateAdded: "Tarikh Ditambah",
+                msgTreeAdded: "Pokok berjaya ditambah! 🌳",
+                msgDeleteConfirm: "Adakah anda pasti mahu memadam pokok ini? Tindakan ini tidak boleh dikembalikan.",
+                msgDeleted: "Pokok berjaya dipadam",
+                searchPlaceholder: "🔍 Cari ID, jenis buah, atau lokasi...",
+                notesPlaceholder: "Tambah pemerhatian tambahan, nota penyelenggaraan...",
+                noLocation: "Tiada nama lokasi"
+            }
+        };
+
+        // Current Language State
+        let currentLang = localStorage.getItem('lang') || 'en';
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'ms' : 'en';
+            localStorage.setItem('lang', currentLang);
+            updateLanguageUI();
+        }
+
+        function updateLanguageUI() {
+            const t = translations[currentLang];
+            
+            // Update button text
+
+            document.getElementById('langText').textContent = currentLang === 'en' ? 'EN' : 'BM';
+            
+            // Update all elements with data-i18n
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) {
+                    // Handle placeholders for inputs
+                    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                        if (el.placeholder) el.placeholder = t[key];
+                    } else if (el.tagName === 'OPTION') {
+                        el.textContent = t[key];
+                    } else {
+                        // For regular text content
+                        // Check if element has child elements (like icons) we want to preserve?
+                        // For this app, direct replacement is mostly fine except for some buttons with icons
+                        // But buttons have specific keys, so we replace content.
+                        if (key === 'btnView' || key === 'btnNavigate' || key === 'btnDelete') return; // These are handled dynamically
+                        el.textContent = t[key];
+                    }
+                }
+            });
+
+            // Specific manual placeholder updates
+            const notes = document.getElementById('notes');
+            if(notes) notes.placeholder = t.notesPlaceholder;
+            
+            const search = document.getElementById('searchInput');
+            if(search) search.placeholder = t.searchPlaceholder;
+
+            // Re-render dynamic content
+            updateDashboard();
+            renderTrees();
+            updateReports();
+            if(typeof updateFruitFilters === 'function') updateFruitFilters();
+            if(typeof updateTreeList === 'function') updateTreeList();
+            updateThemeButton(document.documentElement.getAttribute('data-theme'));
+            updateDBStatus();
+        }
+
+        // Helper to translate status codes
+        function getTranslatedStatus(status) {
+            const t = translations[currentLang];
+            if(status === 'healthy') return t.statusHealthy;
+            if(status === 'fair') return t.statusFair;
+            if(status === 'poor') return t.statusPoor;
+            return status;
+        }
+
         /*
         ========================================
         FIREBASE / FIRESTORE SETUP INSTRUCTIONS
@@ -1115,10 +1361,13 @@ If you received this file in error, please delete it.
         // Update database status indicator
         function updateDBStatus() {
             const statusEl = document.getElementById('dbStatus');
+            if (!statusEl) return;
+            const t = translations[currentLang];
+
             if (useFirestore) {
-                statusEl.innerHTML = '🟢 Connected to Firestore';
+                statusEl.innerHTML = currentLang === 'en' ? '🟢 Connected to Firestore' : '🟢 Bersambung ke Firestore';
             } else {
-                statusEl.innerHTML = '💾 Using Demo Data (LocalStorage)';
+                statusEl.innerHTML = t.dbStatus;
             }
         }
 
@@ -1186,7 +1435,6 @@ If you received this file in error, please delete it.
                 });
             }
         }
-
 
         // Sample data for demo/proposal - Malaysian orchard locations
         const sampleTrees = [
@@ -1410,17 +1658,12 @@ If you received this file in error, please delete it.
                     hideDemoBanner();
                 }
 
-                // Render UI immediately
-                updateDashboard();
-                renderTrees();
-                updateReports();
-                updateFruitFilters();
-                updateTreeList();
+                // Initial Language UI
+                updateLanguageUI();
             } catch (e) {
                 console.error('Bootstrap failed:', e);
             }
         }
-
 
         // Initialize map and trees
         let map;
@@ -1445,6 +1688,9 @@ If you received this file in error, please delete it.
             'cherry': '🍒',
             'avocado': '🥑',
             'melon': '🍈',
+            'durian': '🍈', // Fallback icon
+            'rambutan': '🍇', // Fallback icon
+            'mangosteen': '🍇', // Fallback icon
             'default': '🌳'
         };
 
@@ -1484,7 +1730,6 @@ window.addEventListener('load', async function() {
             // Load saved theme
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', savedTheme);
-            updateThemeButton(savedTheme);
             
             // Ensure UI shows something immediately
             bootstrapDataAndUI();
@@ -1501,17 +1746,6 @@ window.addEventListener('load', async function() {
             if (trees.length === 0) {
                 console.log('📦 No trees found, loading sample data...');
                 trees = [...sampleTrees]; // Create a copy of sample data
-                
-                // Validate that all sample trees have coordinates
-                const treesWithCoords = trees.filter(t => t.coordinates);
-                console.log(`Sample data: ${trees.length} trees, ${treesWithCoords.length} with coordinates`);
-                
-                if (treesWithCoords.length === 0) {
-                    console.error('❌ ERROR: Sample data has no coordinates!');
-                } else {
-                    console.log('✅ Sample tree example:', trees[0]);
-                }
-                
                 await saveTrees();
                 console.log('✅ Sample data loaded:', trees.length, 'trees');
             } else {
@@ -1523,22 +1757,8 @@ window.addEventListener('load', async function() {
                 console.log('🌳 First tree:', trees[0]);
             }
             
-            // Now initialize everything
-            // Map is initialized lazily when the user opens the Map View tab
-            console.log('📊 Updating dashboard...');
-            updateDashboard();
-            
-            console.log('🌲 Rendering trees...');
-            renderTrees();
-            
-            console.log('📈 Updating reports...');
-            updateReports();
-            
-            console.log('🍎 Updating fruit filters...');
-            updateFruitFilters();
-            
-            console.log('📋 Updating tree list...');
-            updateTreeList();
+            // Now initialize everything via Language update to trigger initial render
+            updateLanguageUI();
             
             console.log('✅ App initialized successfully!');
         });
@@ -1652,13 +1872,16 @@ window.addEventListener('load', async function() {
         function updateThemeButton(theme) {
             const themeIcon = document.getElementById('themeIcon');
             const themeText = document.getElementById('themeText');
+            if(!themeText) return;
             
+            const t = translations[currentLang];
+
             if (theme === 'dark') {
                 themeIcon.textContent = '☀️';
-                themeText.textContent = 'Light Mode';
+                themeText.textContent = t.lightMode;
             } else {
                 themeIcon.textContent = '🌙';
-                themeText.textContent = 'Dark Mode';
+                themeText.textContent = t.darkMode;
             }
         }
 
@@ -1692,7 +1915,6 @@ window.addEventListener('load', async function() {
                 mapContainer.innerHTML = `
                     <div class="map-loading">
                         <h3>🗺️ Loading Map</h3>
-                        <p>Initializing Leaflet and fetching tiles...</p>
                         <div class="spinner"></div>
                     </div>
                 `;
@@ -1903,23 +2125,28 @@ window.addEventListener('load', async function() {
             window.open(url, '_blank', 'noopener');
         }
 
-// Create popup content for marker
+        // Create popup content for marker - Updated with Translation
         function createPopupContent(tree) {
+            const t = translations[currentLang];
             return `
                 <div style="min-width: 200px;">
                     <h3 style="margin: 0 0 10px 0; color: #2d5016;">${getFruitIcon(tree.fruitType)} ${tree.fruitType}</h3>
-                    <p style="margin: 5px 0;"><strong>ID:</strong> ${tree.id}</p>
-                    ${tree.variety ? `<p style="margin: 5px 0;"><strong>Variety:</strong> ${tree.variety}</p>` : ''}
-                    <p style="margin: 5px 0;"><strong>Health:</strong> <span class="status-badge status-${tree.healthStatus}">${tree.healthStatus}</span></p>
-                    ${tree.height ? `<p style="margin: 5px 0;"><strong>Height:</strong> ${tree.height}m</p>` : ''}
-                    ${tree.location ? `<p style="margin: 5px 0;"><strong>Location:</strong> ${tree.location}</p>` : ''}
-                    <div style="display:flex; gap:8px; margin-top:10px;"><button onclick="viewTreeDetails(${JSON.stringify(tree).replace(/"/g, '&quot;')})" style="padding: 8px 12px; background: #4a7c2c; color: white; border: none; border-radius: 4px; cursor: pointer; flex:1;">View Details</button><button onclick="navigateToTreeCoordinates('${tree.coordinates || ""}')" style="padding: 8px 12px; background: #2c5d7c; color: white; border: none; border-radius: 4px; cursor: pointer; flex:1;">🧭 Navigate</button></div>
+                    <p style="margin: 5px 0;"><strong>${t.labelId}</strong> ${tree.id}</p>
+                    ${tree.variety ? `<p style="margin: 5px 0;"><strong>${t.labelVariety}</strong> ${tree.variety}</p>` : ''}
+                    <p style="margin: 5px 0;"><strong>${t.labelHealth}</strong> <span class="status-badge status-${tree.healthStatus}">${getTranslatedStatus(tree.healthStatus)}</span></p>
+                    ${tree.height ? `<p style="margin: 5px 0;"><strong>${t.labelHeight}</strong> ${tree.height}m</p>` : ''}
+                    ${tree.location ? `<p style="margin: 5px 0;"><strong>${t.labelLocation}</strong> ${tree.location}</p>` : ''}
+                    <div style="display:flex; gap:8px; margin-top:10px;">
+                        <button onclick="viewTreeDetails(${JSON.stringify(tree).replace(/"/g, '&quot;')})" style="padding: 8px 12px; background: #4a7c2c; color: white; border: none; border-radius: 4px; cursor: pointer; flex:1;">${t.btnView}</button>
+                        <button onclick="navigateToTreeCoordinates('${tree.coordinates || ""}')" style="padding: 8px 12px; background: #2c5d7c; color: white; border: none; border-radius: 4px; cursor: pointer; flex:1;">${t.btnNavigate}</button>
+                    </div>
                 </div>
             `;
         }
 
-        // Update fruit filters
+        // Update fruit filters - Updated with Translation
         function updateFruitFilters() {
+            const t = translations[currentLang];
             const fruits = {};
             trees.forEach(tree => {
                 const fruitType = tree.fruitType || 'Unknown';
@@ -1929,14 +2156,14 @@ window.addEventListener('load', async function() {
             const container = document.getElementById('fruitFilters');
             
             if (Object.keys(fruits).length === 0) {
-                container.innerHTML = '<p style="color: #6c757d; text-align: center; grid-column: 1/-1;">No fruits yet</p>';
+                container.innerHTML = `<p style="color: #6c757d; text-align: center; grid-column: 1/-1;">${t.noTreesFound}</p>`;
                 return;
             }
 
             container.innerHTML = Object.entries(fruits)
                 .sort((a, b) => b[1] - a[1])
                 .map(([fruit, count]) => `
-                    <button class="fruit-filter-btn" onclick="filterByFruit('${fruit}')">
+                    <button class="fruit-filter-btn ${selectedFruit === fruit ? 'active' : ''}" onclick="filterByFruit('${fruit}')">
                         <span class="fruit-icon">${getFruitIcon(fruit)}</span>
                         <span>${fruit} (${count})</span>
                     </button>
@@ -1954,15 +2181,7 @@ window.addEventListener('load', async function() {
                 highlightFruitType(fruitType);
             }
 
-            // Update button states
-            document.querySelectorAll('.fruit-filter-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-
-            if (selectedFruit) {
-                event.target.closest('.fruit-filter-btn').classList.add('active');
-            }
-
+            updateFruitFilters(); // Re-render to show active state
             updateTreeList();
         }
 
@@ -2016,8 +2235,9 @@ window.addEventListener('load', async function() {
             });
         }
 
-        // Update tree list in sidebar
+        // Update tree list in sidebar - Updated with Translation
         function updateTreeList(highlightId = null) {
+            const t = translations[currentLang];
             const container = document.getElementById('treeList');
             let filteredTrees = trees.filter(t => t.coordinates);
 
@@ -2026,7 +2246,7 @@ window.addEventListener('load', async function() {
             }
 
             if (filteredTrees.length === 0) {
-                container.innerHTML = '<p style="color: #6c757d; text-align: center;">No trees to display</p>';
+                container.innerHTML = `<p style="color: #6c757d; text-align: center;">${t.noTreesFound}</p>`;
                 return;
             }
 
@@ -2036,10 +2256,10 @@ window.addEventListener('load', async function() {
                     <div class="tree-list-name">${getFruitIcon(tree.fruitType)} ${tree.fruitType} - ${tree.id}</div>
                     <div class="tree-list-detail">
                         ${tree.variety ? tree.variety + ' • ' : ''}
-                        ${tree.location || 'No location name'}
+                        ${tree.location || t.noLocation}
                     </div>
                     <div class="tree-list-detail">
-                        <span class="status-badge status-${tree.healthStatus}">${tree.healthStatus}</span>
+                        <span class="status-badge status-${tree.healthStatus}">${getTranslatedStatus(tree.healthStatus)}</span>
                     </div>
                 </div>
             `).join('');
@@ -2055,7 +2275,7 @@ window.addEventListener('load', async function() {
                         document.getElementById('coordinates').value = `${lat}, ${lng}`;
                         
                         // Center map on location
-                        map.setView([lat, lng], 16);
+                        if(map) map.setView([lat, lng], 16);
                         
                         alert('Location set! 📍');
                     },
@@ -2122,6 +2342,7 @@ window.addEventListener('load', async function() {
         // Add tree form submission
         document.getElementById('addTreeForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+            const t = translations[currentLang];
             
             const coords = document.getElementById('coordinates').value;
             if (!parseCoordinates(coords)) {
@@ -2146,7 +2367,7 @@ window.addEventListener('load', async function() {
             await saveTree(tree);
             
             this.reset();
-            alert('Tree added successfully! 🌳');
+            alert(t.msgTreeAdded);
             
             updateDashboard();
             addAllMarkers();
@@ -2154,8 +2375,9 @@ window.addEventListener('load', async function() {
             updateTreeList();
         });
 
-        // Update dashboard statistics
+        // Update dashboard statistics - Updated with Translation
         function updateDashboard() {
+            const t = translations[currentLang];
             const total = trees.length;
             const healthy = trees.filter(t => t.healthStatus === 'healthy').length;
             const needsAttention = trees.filter(t => t.healthStatus === 'fair' || t.healthStatus === 'poor').length;
@@ -2170,8 +2392,8 @@ window.addEventListener('load', async function() {
             if (trees.length === 0) {
                 recentDiv.innerHTML = `
                     <div class="empty-state">
-                        <h3>No trees tracked yet</h3>
-                        <p>Start by adding your first tree in the "Add Tree" tab</p>
+                        <h3>${t.noTreesTitle}</h3>
+                        <p>${t.noTreesText}</p>
                     </div>
                 `;
             } else {
@@ -2185,10 +2407,11 @@ window.addEventListener('load', async function() {
             }
         }
 
-        // Create tree card HTML
+        // Create tree card HTML - Updated with Translation
         function createTreeCard(tree) {
+            const t = translations[currentLang];
             const statusClass = `status-${tree.healthStatus}`;
-            const statusText = tree.healthStatus.charAt(0).toUpperCase() + tree.healthStatus.slice(1);
+            const statusText = getTranslatedStatus(tree.healthStatus);
             
             return `
                 <div class="tree-card">
@@ -2200,42 +2423,43 @@ window.addEventListener('load', async function() {
                         <span class="status-badge ${statusClass}">${statusText}</span>
                     </div>
                     <div class="info-row">
-                        <span class="label">Tree ID:</span>
+                        <span class="label">${t.labelId}</span>
                         <span class="value">${tree.id}</span>
                     </div>
                     <div class="info-row">
-                        <span class="label">Location:</span>
-                        <span class="value">${tree.location || 'Not specified'}</span>
+                        <span class="label">${t.labelLocation}</span>
+                        <span class="value">${tree.location || t.noLocation}</span>
                     </div>
                     ${tree.height ? `
                     <div class="info-row">
-                        <span class="label">Height:</span>
+                        <span class="label">${t.labelHeight}</span>
                         <span class="value">${tree.height}m</span>
                     </div>
                     ` : ''}
                     ${tree.diameter ? `
                     <div class="info-row">
-                        <span class="label">Diameter:</span>
+                        <span class="label">${t.labelDiameter}</span>
                         <span class="value">${tree.diameter}cm</span>
                     </div>
                     ` : ''}
                     ${tree.plantedDate ? `
                     <div class="info-row">
-                        <span class="label">Planted:</span>
+                        <span class="label">${t.labelPlanted}</span>
                         <span class="value">${new Date(tree.plantedDate).toLocaleDateString()}</span>
                     </div>
                     ` : ''}
                     <div class="tree-actions">
-                        <button class="btn btn-secondary" onclick='viewTreeDetails(${JSON.stringify(tree)})'>View Details</button>
-                        <button class="btn btn-secondary" onclick="navigateToTreeCoordinates('${tree.coordinates || ''}')">🧭 Navigate</button>
-                        <button class="btn btn-danger" onclick="deleteTree('${tree.id}')">Delete</button>
+                        <button class="btn btn-secondary" onclick='viewTreeDetails(${JSON.stringify(tree)})'>${t.btnView}</button>
+                        <button class="btn btn-secondary" onclick="navigateToTreeCoordinates('${tree.coordinates || ''}')">${t.btnNavigate}</button>
+                        <button class="btn btn-danger" onclick="deleteTree('${tree.id}')">${t.btnDelete}</button>
                     </div>
                 </div>
             `;
         }
 
-        // Render all trees
+        // Render all trees - Updated with Translation
         function renderTrees() {
+            const t = translations[currentLang];
             const container = document.getElementById('treesContainer');
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const statusFilter = document.getElementById('filterStatus').value;
@@ -2270,8 +2494,8 @@ window.addEventListener('load', async function() {
             if (filtered.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
-                        <h3>No trees found</h3>
-                        <p>Try adjusting your search or filters</p>
+                        <h3>${t.noTreesFound}</h3>
+                        <p>${t.addSomeTrees}</p>
                     </div>
                 `;
             } else {
@@ -2283,57 +2507,58 @@ window.addEventListener('load', async function() {
         document.getElementById('filterStatus').addEventListener('change', renderTrees);
         document.getElementById('sortBy').addEventListener('change', renderTrees);
 
-        // View tree details
+        // View tree details - Updated with Translation
         function viewTreeDetails(tree) {
+            const t = translations[currentLang];
             const modal = document.getElementById('treeModal');
             const modalBody = document.getElementById('modalBody');
             
             modalBody.innerHTML = `
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>Tree ID</label>
+                        <label>${t.labelId}</label>
                         <input type="text" value="${tree.id}" readonly>
                     </div>
                     <div class="form-group">
-                        <label>Fruit Type</label>
+                        <label>${t.labelFruit}</label>
                         <input type="text" value="${getFruitIcon(tree.fruitType)} ${tree.fruitType}" readonly>
                     </div>
                     <div class="form-group">
-                        <label>Variety</label>
+                        <label>${t.labelVariety}</label>
                         <input type="text" value="${tree.variety || 'N/A'}" readonly>
                     </div>
                     <div class="form-group">
-                        <label>Health Status</label>
-                        <input type="text" value="${tree.healthStatus}" readonly>
+                        <label>${t.labelHealth}</label>
+                        <input type="text" value="${getTranslatedStatus(tree.healthStatus)}" readonly>
                     </div>
                     <div class="form-group">
-                        <label>Height</label>
+                        <label>${t.labelHeight}</label>
                         <input type="text" value="${tree.height ? tree.height + 'm' : 'N/A'}" readonly>
                     </div>
                     <div class="form-group">
-                        <label>Diameter</label>
+                        <label>${t.labelDiameter}</label>
                         <input type="text" value="${tree.diameter ? tree.diameter + 'cm' : 'N/A'}" readonly>
                     </div>
                     <div class="form-group">
-                        <label>Location</label>
+                        <label>${t.labelLocation}</label>
                         <input type="text" value="${tree.location || 'N/A'}" readonly>
                     </div>
                     <div class="form-group">
-                        <label>GPS Coordinates</label>
+                        <label>${t.labelCoords}</label>
                         <input type="text" value="${tree.coordinates || 'N/A'}" readonly>
                     </div>
                     <div class="form-group">
-                        <label>Planted Date</label>
+                        <label>${t.labelPlanted}</label>
                         <input type="text" value="${tree.plantedDate ? new Date(tree.plantedDate).toLocaleDateString() : 'N/A'}" readonly>
                     </div>
                     <div class="form-group">
-                        <label>Date Added</label>
+                        <label>${t.labelDateAdded}</label>
                         <input type="text" value="${new Date(tree.dateAdded).toLocaleString()}" readonly>
                     </div>
                 </div>
                 ${tree.notes ? `
                 <div class="form-group" style="margin-top: 20px;">
-                    <label>Notes</label>
+                    <label>${t.labelNotes}</label>
                     <textarea readonly>${tree.notes}</textarea>
                 </div>
                 ` : ''}
@@ -2347,7 +2572,8 @@ window.addEventListener('load', async function() {
         }
 
         async function deleteTree(treeId) {
-            if (confirm('Are you sure you want to delete this tree? This action cannot be undone.')) {
+            const t = translations[currentLang];
+            if (confirm(t.msgDeleteConfirm)) {
                 await deleteTreeFromDB(treeId);
                 
                 if (markers[treeId]) {
@@ -2360,11 +2586,13 @@ window.addEventListener('load', async function() {
                 updateReports();
                 updateFruitFilters();
                 updateTreeList();
-                alert('Tree deleted successfully');
+                alert(t.msgDeleted);
             }
         }
 
+        // Update Reports - Updated with Translation
         function updateReports() {
+            const t = translations[currentLang];
             if (trees.length === 0) {
                 document.getElementById('avgHeight').textContent = '0';
                 document.getElementById('avgDiameter').textContent = '0';
@@ -2454,6 +2682,8 @@ window.addEventListener('load', async function() {
       localStorage.removeItem('demoDataSeeded');
       localStorage.removeItem('tts_demoMode');
     } catch(e) {}
+    location.reload();
+  }
 
   function sendFeedbackEmail() {
     const to = "tkx7pjh1@rskfc.com";
@@ -2477,12 +2707,8 @@ window.addEventListener('load', async function() {
     window.location.href = mailto;
   }
 
-    location.reload();
-  }
-
   window.addEventListener('DOMContentLoaded', maybeRestoreClientPreviewBar);
 </script>
-
 
 <!-- Evaluation-only footer notice -->
 <div id="evalOnlyFooter" style="position:fixed;left:14px;right:14px;bottom:14px;z-index:9998;background:rgba(17,24,39,.96);color:#fff;padding:10px 12px;border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);">
@@ -2490,9 +2716,8 @@ window.addEventListener('load', async function() {
     <span style="font-weight:700;">Evaluation only</span>
     <span style="opacity:.9;">Not licensed for copying, redistribution, or production use.</span>
   </div>
-  <button onclick="dismissEvalFooter()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:8px 10px;cursor:pointer;">Dismiss</button>
+  <button onclick="dismissEvalFooter()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:8px 10px;cursor:pointer;" data-i18n="dismiss">Dismiss</button>
 </div>
-
 
 <script>
 function dismissEvalFooter(){var e=document.getElementById("evalOnlyFooter");e&&(e.style.display="none");try{localStorage.setItem("tts_evalFooterDismissed","1")}catch(t){}}
