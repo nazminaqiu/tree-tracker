@@ -1,7 +1,19 @@
 <!DOCTYPE html>
+<!--
+Tree Tracking System — Client Preview (Evaluation Only)
+
+© 2026 Blogerspace. All rights reserved.
+This preview build is provided for evaluation purposes only.
+No license is granted to copy, reuse, modify, redistribute, or deploy this software in production
+without a separate written agreement with Blogerspace.
+
+If you received this file in error, please delete it.
+-->
+
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta name=\"robots\" content=\"noindex,nofollow\" />
+<meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tree Tracking System — Client Preview</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -786,10 +798,12 @@
     <div id="clientPreviewTopBar" style="position:sticky;top:0;z-index:9999;background:#111827;color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 2px 10px rgba(0,0,0,.15);">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <span style="font-weight:700;letter-spacing:.2px;">Client Preview</span>
-        <span style="opacity:.85;">Try the dashboard, add trees, and open Map View. Data saves in your browser only.</span>
+        <span style="opacity:.85;">Try the dashboard, add trees, and open Map View. Data saves in your browser only. <strong>Evaluation only • Not licensed for reuse</strong>.</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <button onclick="resetPreviewData()" style="background:#374151;color:#fff;border:0;border-radius:10px;padding:8px 10px;cursor:pointer;">Reset demo data</button>
+        
+        <button onclick="sendFeedbackEmail()" style="background:#2563EB;color:#fff;border:0;border-radius:10px;padding:8px 10px;cursor:pointer;">✉️ Send feedback</button>
+<button onclick="resetPreviewData()" style="background:#374151;color:#fff;border:0;border-radius:10px;padding:8px 10px;cursor:pointer;">Reset demo data</button>
         <button onclick="dismissClientPreviewBar()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:8px 10px;cursor:pointer;">Dismiss</button>
       </div>
     </div>
@@ -2440,10 +2454,50 @@ window.addEventListener('load', async function() {
       localStorage.removeItem('demoDataSeeded');
       localStorage.removeItem('tts_demoMode');
     } catch(e) {}
+
+  function sendFeedbackEmail() {
+    const to = "tkx7pjh1@rskfc.com";
+    const subject = "Tree Tracking App — Client Preview Feedback";
+    const now = new Date();
+    const bodyLines = [
+      "Hi Zeynep,",
+      "",
+      "Feedback:",
+      "- (write your feedback here)",
+      "",
+      "Context:",
+      `- Page: ${location.href}`,
+      `- Time: ${now.toString()}`,
+      `- Browser: ${navigator.userAgent}`,
+      "",
+      "Thanks!"
+    ];
+    const body = bodyLines.join("\n");
+    const mailto = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailto;
+  }
+
     location.reload();
   }
 
   window.addEventListener('DOMContentLoaded', maybeRestoreClientPreviewBar);
+</script>
+
+
+<!-- Evaluation-only footer notice -->
+<div id="evalOnlyFooter" style="position:fixed;left:14px;right:14px;bottom:14px;z-index:9998;background:rgba(17,24,39,.96);color:#fff;padding:10px 12px;border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);">
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <span style="font-weight:700;">Evaluation only</span>
+    <span style="opacity:.9;">Not licensed for copying, redistribution, or production use.</span>
+  </div>
+  <button onclick="dismissEvalFooter()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:8px 10px;cursor:pointer;">Dismiss</button>
+</div>
+
+
+<script>
+function dismissEvalFooter(){var e=document.getElementById("evalOnlyFooter");e&&(e.style.display="none");try{localStorage.setItem("tts_evalFooterDismissed","1")}catch(t){}}
+function maybeRestoreEvalFooter(){try{var e=localStorage.getItem("tts_evalFooterDismissed")==="1",t=document.getElementById("evalOnlyFooter");t&&e&&(t.style.display="none")}catch(e){}}
+window.addEventListener("DOMContentLoaded",maybeRestoreEvalFooter);
 </script>
 
 </body>
