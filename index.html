@@ -1,21 +1,9 @@
 <!DOCTYPE html>
-<!--
-Tree Tracking System — Client Preview (Evaluation Only)
-
-© 2026 Blogerspace. All rights reserved.
-This preview build is provided for evaluation purposes only.
-No license is granted to copy, reuse, modify, redistribute, or deploy this software in production
-without a separate written agreement with Blogerspace.
-
-If you received this file in error, please delete it.
--->
-
 <html lang="en">
 <head>
-    <meta name="robots" content="noindex,nofollow" />
 <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tree Tracking System — Client Preview</title>
+    <title>Tree Tracking System</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
@@ -134,6 +122,51 @@ If you received this file in error, please delete it.
             border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.3);
             font-weight: 600;
+        }
+
+        /* Loading overlay for page reload */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            backdrop-filter: blur(5px);
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-content {
+            text-align: center;
+            color: white;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #4a7c2c;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 10px;
         }
 
         header h1 {
@@ -813,23 +846,210 @@ If you received this file in error, please delete it.
             transform: translateY(-1px);
         }
 
+        /* Pin mode floating button */
+        #pinModeBtn {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            z-index: 1000;
+            background: white;
+            border: 2px solid #4a7c2c;
+            color: #2d5016;
+            padding: 8px 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            transition: all 0.25s;
+            user-select: none;
+            pointer-events: all;
+        }
+        #pinModeBtn:hover {
+            background: #f0f7eb;
+            box-shadow: 0 4px 12px rgba(74,124,44,0.3);
+            transform: translateY(-1px);
+        }
+        #pinModeBtn.active {
+            background: #4a7c2c;
+            color: white;
+            border-color: #2d5016;
+            box-shadow: 0 4px 14px rgba(74,124,44,0.5);
+            animation: pinPulse 1.5s ease-in-out infinite;
+        }
+        @keyframes pinPulse {
+            0%, 100% { box-shadow: 0 4px 14px rgba(74,124,44,0.5); }
+            50% { box-shadow: 0 4px 24px rgba(74,124,44,0.85); }
+        }
+        #map.pin-cursor { cursor: crosshair !important; }
+        #map.pin-cursor .leaflet-container { cursor: crosshair !important; }
+
+        [data-theme="dark"] #pinModeBtn {
+            background: #1e293b;
+            color: #86efac;
+            border-color: #4a7c2c;
+        }
+        [data-theme="dark"] #pinModeBtn:hover {
+            background: #2d5016;
+        }
+        [data-theme="dark"] #pinModeBtn.active {
+            background: #4a7c2c;
+            color: white;
+        }
+
+        /* ===== ICON PICKER ===== */
+        .icon-picker-trigger {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 14px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            background: var(--input-bg);
+            color: var(--text-secondary);
+            transition: border-color 0.2s, background 0.2s;
+            font-size: 14px;
+            user-select: none;
+        }
+        .icon-picker-trigger:hover { border-color: var(--text-primary); background: var(--bg-light); }
+        .icon-picker-trigger .selected-emoji { font-size: 1.6em; line-height: 1; }
+        .icon-picker-trigger .trigger-arrow { margin-left: auto; opacity: 0.5; }
+
+        #iconPickerModal .modal-content {
+            max-width: 640px;
+            padding: 24px;
+        }
+        #iconPickerModal {
+            z-index: 2000;
+        }
+        .icon-search {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            background: var(--input-bg);
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        .icon-search:focus { outline: none; border-color: var(--text-primary); }
+        .icon-category-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin: 14px 0 8px;
+        }
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 8px;
+            max-height: 360px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .icon-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            padding: 10px 6px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            cursor: pointer;
+            background: var(--card-bg);
+            transition: all 0.15s;
+        }
+        .icon-item:hover { border-color: #4a7c2c; background: var(--bg-light); transform: scale(1.05); }
+        .icon-item.selected { border-color: #4a7c2c; background: #e8f5e1; }
+        [data-theme="dark"] .icon-item.selected { background: #1a3a1a; }
+        .icon-item .icon-emoji { font-size: 2em; line-height: 1; }
+        .icon-item .icon-name { font-size: 10px; font-weight: 600; color: var(--text-muted); text-align: center; line-height: 1.2; }
+
+        /* ===== PHOTO CAPTURE ===== */
+        .photo-capture-section {
+            border: 2px dashed var(--border-color);
+            border-radius: 10px;
+            padding: 16px;
+            background: var(--bg-light);
+            transition: border-color 0.2s;
+        }
+        .photo-capture-section:hover { border-color: #4a7c2c; }
+        .photo-capture-label {
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 10px;
+            display: block;
+        }
+        .photo-capture-btns {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .btn-photo {
+            padding: 10px 18px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--card-bg);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .btn-photo:hover { border-color: #4a7c2c; color: #2d5016; background: var(--bg-lighter); }
+        .btn-photo.active { border-color: #4a7c2c; background: #4a7c2c; color: white; }
+        .photo-preview-wrap { position: relative; display: inline-block; }
+        .photo-preview {
+            width: 100%;
+            max-width: 320px;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid var(--border-color);
+            display: none;
+        }
+        .photo-preview.has-image { display: block; }
+        .btn-remove-photo {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: rgba(220,53,69,0.9);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 26px;
+            text-align: center;
+            display: none;
+        }
+        .photo-preview.has-image ~ .btn-remove-photo { display: block; }
+        .photo-hint { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
     </style>
 </head>
 <body>
-    <!-- Client Preview Banner -->
-    <div id="clientPreviewTopBar" style="position:sticky;top:0;z-index:9999;background:#111827;color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 2px 10px rgba(0,0,0,.15);">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <span style="font-weight:700;letter-spacing:.2px;">Client Preview</span>
-        <span style="opacity:.85;" data-i18n="previewText">Try the dashboard, add trees, and open Map View. Data saves in your browser only. Evaluation only.</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        
-        <button onclick="sendFeedbackEmail()" style="background:#2563EB;color:#fff;border:0;border-radius:10px;padding:8px 10px;cursor:pointer;">✉️ <span data-i18n="feedback">Send feedback</span></button>
-<button onclick="resetPreviewData()" style="background:#374151;color:#fff;border:0;border-radius:10px;padding:8px 10px;cursor:pointer;" data-i18n="resetData">Reset demo data</button>
-        <button onclick="dismissClientPreviewBar()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:8px 10px;cursor:pointer;" data-i18n="dismiss">Dismiss</button>
-      </div>
+    <!-- Loading overlay for page reload -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div class="loading-text" id="loadingText">Loading...</div>
+        </div>
     </div>
-    
+
     <div class="container">
         <header>
             <div class="header-controls">
@@ -843,7 +1063,7 @@ If you received this file in error, please delete it.
             </div>
 
             <div style="position: absolute; top: 30px; left: 30px; display: flex; align-items: center; gap: 8px; font-size: 12px; opacity: 0.9;">
-                <span id="dbStatus" data-i18n="dbStatus">💾 Using Demo Data</span>
+                <span id="dbStatus" data-i18n="dbStatus">💾 Using Local Data</span>
             </div>
             <h1 data-i18n="appTitle">🌳 Tree Tracking System</h1>
             <p data-i18n="appSubtitle">Monitor and manage your orchard with interactive mapping</p>
@@ -869,8 +1089,13 @@ If you received this file in error, please delete it.
 
         <!-- Map Tab -->
         <div id="mapTab" class="tab-content">
-            <div class="map-container">
+            <div class="map-container" style="position:relative;">
                 <div id="map"></div>
+                <!-- Floating pin mode button — outside #map so Leaflet init doesn't wipe it -->
+                <div id="pinModeBtn" onclick="togglePinMode()" title="Click to enter pin mode, then click the map to place a tree">
+                    <span id="pinModeIcon">📍</span>
+                    <span id="pinModeLabel">Pin Tree Here</span>
+                </div>
                 <div class="map-sidebar">
                     <h3 data-i18n="filterFruit">Filter by Fruit Type</h3>
                     <div class="fruit-filter-grid" id="fruitFilters">
@@ -934,25 +1159,13 @@ If you received this file in error, please delete it.
                         <input type="text" id="treeId" required placeholder="e.g., TREE-001">
                     </div>
                     <div class="form-group">
-                        <label for="fruitType" data-i18n="labelFruit">Fruit Type *</label>
-                        <input type="text" id="fruitType" required placeholder="e.g., Mango, Apple, Orange" list="fruitSuggestions">
-                        <datalist id="fruitSuggestions">
-                            <option value="🥭 Mango">
-                            <option value="🍎 Apple">
-                            <option value="🍊 Orange">
-                            <option value="🍋 Lemon">
-                            <option value="🍌 Banana">
-                            <option value="🥥 Coconut">
-                            <option value="🍇 Grapes">
-                            <option value="🍑 Peach">
-                            <option value="🍐 Pear">
-                            <option value="🍒 Cherry">
-                            <option value="🥑 Avocado">
-                            <option value="🍈 Melon">
-                            <option value="Durian">
-                            <option value="Rambutan">
-                            <option value="Mangosteen">
-                        </datalist>
+                        <label data-i18n="labelFruit">Fruit Type *</label>
+                        <input type="hidden" id="fruitType" required>
+                        <div class="icon-picker-trigger" id="fruitTypeTrigger" onclick="openIconPicker('main')" tabindex="0">
+                            <span class="selected-emoji" id="main_selectedEmoji">🌳</span>
+                            <span id="main_selectedLabel" style="flex:1;">Select a tree type…</span>
+                            <span class="trigger-arrow">▾</span>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="variety" data-i18n="labelVariety">Variety/Cultivar</label>
@@ -992,6 +1205,29 @@ If you received this file in error, please delete it.
                 <div class="form-group">
                     <label for="notes" data-i18n="labelNotes">Notes</label>
                     <textarea id="notes" placeholder="Add any additional observations, maintenance notes, or special care instructions..."></textarea>
+                </div>
+
+                <!-- Photo capture -->
+                <div class="photo-capture-section" style="margin-bottom:24px;">
+                    <span class="photo-capture-label">📸 Tree Photo (optional)</span>
+                    <div class="photo-capture-btns">
+                        <button type="button" class="btn-photo" onclick="document.getElementById('main_cameraInput').click()">
+                            📷 Take Photo
+                        </button>
+                        <button type="button" class="btn-photo" onclick="document.getElementById('main_galleryInput').click()">
+                            🖼️ Choose from Gallery
+                        </button>
+                    </div>
+                    <!-- Camera input (mobile opens rear camera) -->
+                    <input type="file" id="main_cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoInput(this,'main_preview','main_removeBtn','main_photoData')">
+                    <!-- Gallery input (no capture attr, so file picker / gallery) -->
+                    <input type="file" id="main_galleryInput" accept="image/*" style="display:none" onchange="handlePhotoInput(this,'main_preview','main_removeBtn','main_photoData')">
+                    <input type="hidden" id="main_photoData">
+                    <div class="photo-preview-wrap">
+                        <img id="main_preview" class="photo-preview" alt="Tree photo preview">
+                        <button type="button" class="btn-remove-photo" id="main_removeBtn" onclick="removePhoto('main_preview','main_removeBtn','main_photoData')">✕</button>
+                    </div>
+                    <p class="photo-hint">On mobile, "Take Photo" opens your camera directly.</p>
                 </div>
 
                 <button type="submit" class="btn btn-primary">
@@ -1064,6 +1300,106 @@ If you received this file in error, please delete it.
         </div>
     </div>
 
+    <!-- Icon Picker Modal -->
+    <div id="iconPickerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🌳 Choose Tree / Fruit Type</h2>
+                <button class="close-modal" onclick="closeIconPicker()">&times;</button>
+            </div>
+            <input type="text" class="icon-search" id="iconSearchInput" placeholder="🔍 Search e.g. Mango, Durian, Apple…" oninput="filterIconGrid()">
+            <div id="iconGridContainer"></div>
+        </div>
+    </div>
+
+    <!-- Quick-Add Tree Modal (from map pin) -->
+    <div id="quickAddModal" class="modal">
+        <div class="modal-content" style="max-width:700px;">
+            <div class="modal-header">
+                <h2>📍 Add Tree at Pinned Location</h2>
+                <button class="close-modal" onclick="closeQuickAddModal()">&times;</button>
+            </div>
+            <div style="background:var(--bg-light);border-left:4px solid #4a7c2c;padding:12px 16px;border-radius:4px;margin-bottom:20px;font-size:14px;color:var(--text-secondary);">
+                <strong>📌 Pinned coordinates:</strong> <span id="pinnedCoordsDisplay" style="font-family:monospace;color:var(--text-primary);font-weight:700;"></span>
+                <br><small style="color:var(--text-muted);">These have been filled in automatically from your map pin.</small>
+            </div>
+            <form id="quickAddForm" onsubmit="submitQuickAddTree(event)">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Tree ID *</label>
+                        <input type="text" id="qa_treeId" required placeholder="e.g., TREE-001">
+                    </div>
+                    <div class="form-group">
+                        <label>Fruit Type *</label>
+                        <input type="hidden" id="qa_fruitType" required>
+                        <div class="icon-picker-trigger" id="qa_fruitTypeTrigger" onclick="openIconPicker('qa')" tabindex="0">
+                            <span class="selected-emoji" id="qa_selectedEmoji">🌳</span>
+                            <span id="qa_selectedLabel" style="flex:1;">Select a tree type…</span>
+                            <span class="trigger-arrow">▾</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Variety/Cultivar</label>
+                        <input type="text" id="qa_variety" placeholder="e.g., Harumanis">
+                    </div>
+                    <div class="form-group">
+                        <label>Health Status *</label>
+                        <select id="qa_healthStatus" required>
+                            <option value="">Select Status</option>
+                            <option value="healthy">Healthy</option>
+                            <option value="fair">Fair</option>
+                            <option value="poor">Poor</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Height (meters)</label>
+                        <input type="number" id="qa_height" step="0.1" placeholder="e.g., 5.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Trunk Diameter (cm)</label>
+                        <input type="number" id="qa_diameter" step="0.1" placeholder="e.g., 30.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Location Name</label>
+                        <input type="text" id="qa_location" placeholder="e.g., North Field, Row 3">
+                    </div>
+                    <div class="form-group">
+                        <label>Planted Date</label>
+                        <input type="date" id="qa_plantedDate">
+                    </div>
+                    <div class="form-group" style="grid-column:1/-1;">
+                        <label>GPS Coordinates (auto-filled from pin)</label>
+                        <input type="text" id="qa_coordinates" required readonly style="background:var(--bg-lighter);font-family:monospace;">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom:20px;">
+                    <label>Notes</label>
+                    <textarea id="qa_notes" placeholder="Additional observations..." style="min-height:80px;"></textarea>
+                </div>
+
+                <!-- Photo capture in quick-add -->
+                <div class="photo-capture-section" style="margin-bottom:20px;">
+                    <span class="photo-capture-label">📸 Tree Photo (optional)</span>
+                    <div class="photo-capture-btns">
+                        <button type="button" class="btn-photo" onclick="document.getElementById('qa_cameraInput').click()">📷 Take Photo</button>
+                        <button type="button" class="btn-photo" onclick="document.getElementById('qa_galleryInput').click()">🖼️ Gallery</button>
+                    </div>
+                    <input type="file" id="qa_cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoInput(this,'qa_preview','qa_removeBtn','qa_photoData')">
+                    <input type="file" id="qa_galleryInput" accept="image/*" style="display:none" onchange="handlePhotoInput(this,'qa_preview','qa_removeBtn','qa_photoData')">
+                    <input type="hidden" id="qa_photoData">
+                    <div class="photo-preview-wrap">
+                        <img id="qa_preview" class="photo-preview" alt="Tree photo preview">
+                        <button type="button" class="btn-remove-photo" id="qa_removeBtn" onclick="removePhoto('qa_preview','qa_removeBtn','qa_photoData')">✕</button>
+                    </div>
+                </div>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                    <button type="submit" class="btn btn-primary">🌳 Add Tree to System</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeQuickAddModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Tree Detail Modal -->
     <div id="treeModal" class="modal">
         <div class="modal-content">
@@ -1081,13 +1417,13 @@ If you received this file in error, please delete it.
             en: {
                 appTitle: "🌳 Tree Tracking System",
                 appSubtitle: "Monitor and manage your orchard with interactive mapping",
-                previewText: "Try the dashboard, add trees, and open Map View. Data saves in your browser only. Evaluation only.",
+                previewText: "Try the dashboard, add trees, and open Map View. Data saves in your browser (or Firestore if configured).",
                 feedback: "Send feedback",
                 resetData: "Reset demo data",
                 dismiss: "Dismiss",
                 darkMode: "Dark Mode",
                 lightMode: "Light Mode",
-                dbStatus: "💾 Using Demo Data",
+                dbStatus: "💾 Using Local Data",
                 demoBannerTitle: "Showing demo data.",
                 demoBannerText: "Add your own trees, or load your saved trees from Firestore.",
                 loadFirestore: "Load from Firestore",
@@ -1156,13 +1492,13 @@ If you received this file in error, please delete it.
             ms: {
                 appTitle: "🌳 Sistem Penjejakan Pokok",
                 appSubtitle: "Pantau dan urus kebun anda dengan pemetaan interaktif",
-                previewText: "Cuba papan pemuka, tambah pokok, dan buka Paparan Peta. Data disimpan di pelayar sahaja. Untuk penilaian.",
+                previewText: "Cuba papan pemuka, tambah pokok, dan buka Paparan Peta. Data disimpan di pelayar (atau Firestore jika dikonfigurasi).",
                 feedback: "Maklum Balas",
                 resetData: "Set Semula Data",
                 dismiss: "Tutup",
                 darkMode: "Mod Gelap",
                 lightMode: "Mod Cerah",
-                dbStatus: "💾 Menggunakan Data Demo",
+                dbStatus: "💾 Menggunakan Data Tempatan",
                 demoBannerTitle: "Menunjukkan data demo.",
                 demoBannerText: "Tambah pokok anda sendiri, atau muatkan dari Firestore.",
                 loadFirestore: "Muat dari Firestore",
@@ -1234,9 +1570,23 @@ If you received this file in error, please delete it.
         let currentLang = localStorage.getItem('lang') || 'en';
 
         function toggleLanguage() {
+            // Toggle language
             currentLang = currentLang === 'en' ? 'ms' : 'en';
             localStorage.setItem('lang', currentLang);
-            updateLanguageUI();
+            
+            // Show loading overlay
+            const overlay = document.getElementById('loadingOverlay');
+            const loadingText = document.getElementById('loadingText');
+            const t = translations[currentLang];
+            
+            // Update loading text based on new language
+            loadingText.textContent = currentLang === 'ms' ? 'Memuatkan...' : 'Loading...';
+            overlay.classList.add('active');
+            
+            // Reload page after a short delay to show the animation
+            setTimeout(() => {
+                location.reload();
+            }, 300);
         }
 
         function updateLanguageUI() {
@@ -1333,6 +1683,14 @@ If you received this file in error, please delete it.
         
         // Firebase Configuration
         // NOTE: Replace with your own Firebase config
+
+        // ===========================
+        // PRODUCTION CONFIG (REQUIRED)
+        // ===========================
+        // 1) Replace firebaseConfig with your real values OR set useFirestore = false to force local-only mode.
+        // 2) For production, you should enable Firebase Authentication and tighten Firestore rules.
+        //
+        // Tip: if you don't want Firestore, just leave firebaseConfig as-is and the app will use localStorage.
         const firebaseConfig = {
             apiKey: "YOUR_API_KEY",
             authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
@@ -1731,9 +2089,7 @@ window.addEventListener('load', async function() {
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', savedTheme);
             
-            // Ensure UI shows something immediately
-            bootstrapDataAndUI();
-
+            // Ensure UI shows something immediately (already bootstrapped on DOMContentLoaded)
             // Load trees from Firestore or localStorage (may overwrite demo data)
             try {
                 await loadTrees();
@@ -1943,11 +2299,13 @@ window.addEventListener('load', async function() {
                     console.log('Creating Leaflet map object...');
                     map = L.map('map', {
                         center: [defaultLat, defaultLng],
-                        zoom: 14,
-                        zoomControl: true,
+                        zoom: 20,
+                        zoomControl: false,
                         scrollWheelZoom: true,
                         attributionControl: true
                     });
+                    // Move zoom controls to top-right so they don't overlap the pin button
+                    L.control.zoom({ position: 'topright' }).addTo(map);
 
                     console.log('✅ Map object created successfully');
 
@@ -1955,7 +2313,8 @@ window.addEventListener('load', async function() {
                     console.log('Adding tile layer...');
                     const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                        maxZoom: 19,
+                        maxZoom: 25,
+                        maxNativeZoom: 19,
                         minZoom: 3
                     });
                     
@@ -1986,6 +2345,7 @@ window.addEventListener('load', async function() {
                     setTimeout(() => {
                         console.log('🌳 Adding tree markers...');
                         addAllMarkers();
+                        attachMapPinListener();
                     }, 600);
                     
                     console.log('✅ Map initialization complete');
@@ -2070,6 +2430,366 @@ window.addEventListener('load', async function() {
             }
         }
 
+        // ===== TREE ICON CATALOGUE =====
+        const treeIconCatalogue = [
+            // Tropical
+            { emoji: '🥭', name: 'Mango',       category: 'Tropical' },
+            { emoji: '🍈', name: 'Durian',       category: 'Tropical' },
+            { emoji: '🥥', name: 'Coconut',      category: 'Tropical' },
+            { emoji: '🍍', name: 'Pineapple',    category: 'Tropical' },
+            { emoji: '🍌', name: 'Banana',       category: 'Tropical' },
+            { emoji: '🫐', name: 'Rambutan',     category: 'Tropical' },
+            { emoji: '🟣', name: 'Mangosteen',   category: 'Tropical' },
+            { emoji: '⭐', name: 'Starfruit',    category: 'Tropical' },
+            { emoji: '🌿', name: 'Jackfruit',    category: 'Tropical' },
+            { emoji: '🟡', name: 'Langsat',      category: 'Tropical' },
+            { emoji: '🥑', name: 'Avocado',      category: 'Tropical' },
+            { emoji: '🍊', name: 'Ciku',         category: 'Tropical' },
+            { emoji: '🍑', name: 'Papaya',       category: 'Tropical' },
+            { emoji: '🫒', name: 'Guava',        category: 'Tropical' },
+            { emoji: '🔴', name: 'Jambu',        category: 'Tropical' },
+            // Temperate fruits
+            { emoji: '🍎', name: 'Apple',        category: 'Temperate' },
+            { emoji: '🍐', name: 'Pear',         category: 'Temperate' },
+            { emoji: '🍊', name: 'Orange',       category: 'Temperate' },
+            { emoji: '🍋', name: 'Lemon',        category: 'Temperate' },
+            { emoji: '🍋', name: 'Lime',         category: 'Temperate' },
+            { emoji: '🍒', name: 'Cherry',       category: 'Temperate' },
+            { emoji: '🍑', name: 'Peach',        category: 'Temperate' },
+            { emoji: '🫐', name: 'Blueberry',    category: 'Temperate' },
+            { emoji: '🍇', name: 'Grapes',       category: 'Temperate' },
+            { emoji: '🍓', name: 'Strawberry',   category: 'Temperate' },
+            { emoji: '🥝', name: 'Kiwi',         category: 'Temperate' },
+            { emoji: '🍉', name: 'Watermelon',   category: 'Temperate' },
+            { emoji: '🍈', name: 'Melon',        category: 'Temperate' },
+            // Other trees
+            { emoji: '🌳', name: 'Oak',          category: 'Trees' },
+            { emoji: '🌲', name: 'Pine',         category: 'Trees' },
+            { emoji: '🎋', name: 'Bamboo',       category: 'Trees' },
+            { emoji: '🌴', name: 'Palm',         category: 'Trees' },
+            { emoji: '🫒', name: 'Olive',        category: 'Trees' },
+            { emoji: '🌰', name: 'Chestnut',     category: 'Trees' },
+            { emoji: '🍫', name: 'Cacao',        category: 'Trees' },
+            { emoji: '☕', name: 'Coffee',       category: 'Trees' },
+            { emoji: '🌿', name: 'Herb / Other', category: 'Trees' },
+        ];
+
+        let iconPickerTarget = 'main'; // 'main' or 'qa'
+
+        function openIconPicker(target) {
+            iconPickerTarget = target;
+            document.getElementById('iconSearchInput').value = '';
+            // Update modal title depending on context
+            const title = document.querySelector('#iconPickerModal .modal-header h2');
+            if (title) title.textContent = '🌳 Choose Tree / Fruit Type';
+            renderIconGrid(treeIconCatalogue);
+            document.getElementById('iconPickerModal').classList.add('active');
+            setTimeout(() => document.getElementById('iconSearchInput').focus(), 100);
+        }
+
+        function closeIconPicker() {
+            document.getElementById('iconPickerModal').classList.remove('active');
+            // If closed mid-pin-flow without selecting, cancel the pin
+            if (iconPickerTarget === 'pin_qa' && pendingPinCoords) {
+                pendingPinCoords = null;
+                removeTempPin();
+                if (pinModeActive) togglePinMode();
+            }
+        }
+
+        function filterIconGrid() {
+            const q = document.getElementById('iconSearchInput').value.toLowerCase();
+            const filtered = q ? treeIconCatalogue.filter(i => i.name.toLowerCase().includes(q) || i.category.toLowerCase().includes(q)) : treeIconCatalogue;
+            renderIconGrid(filtered);
+        }
+
+        function renderIconGrid(items) {
+            const container = document.getElementById('iconGridContainer');
+            if (items.length === 0) {
+                container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px;">No results found</p>';
+                return;
+            }
+
+            // Group by category
+            const groups = {};
+            items.forEach(item => {
+                if (!groups[item.category]) groups[item.category] = [];
+                groups[item.category].push(item);
+            });
+
+            // Get currently selected value to mark active
+            const fieldId = iconPickerTarget === 'main' ? 'fruitType' : 'qa_fruitType';
+            const currentVal = (document.getElementById(fieldId) || {}).value || '';
+
+            let html = '';
+            for (const [cat, catItems] of Object.entries(groups)) {
+                html += `<div class="icon-category-label">${cat}</div><div class="icon-grid">`;
+                catItems.forEach(item => {
+                    const isSelected = currentVal === `${item.emoji} ${item.name}`;
+                    html += `
+                        <div class="icon-item ${isSelected ? 'selected' : ''}" onclick="selectTreeIcon('${item.emoji}','${item.name}')">
+                            <span class="icon-emoji">${item.emoji}</span>
+                            <span class="icon-name">${item.name}</span>
+                        </div>`;
+                });
+                html += '</div>';
+            }
+            container.innerHTML = html;
+        }
+
+        function selectTreeIcon(emoji, name) {
+            const fullValue = `${emoji} ${name}`;
+            const prefix = iconPickerTarget;
+
+            if (prefix === 'main') {
+                document.getElementById('fruitType').value = fullValue;
+                document.getElementById('main_selectedEmoji').textContent = emoji;
+                document.getElementById('main_selectedLabel').textContent = name;
+                // Just close picker — user stays on the Add Tree form
+                document.getElementById('iconPickerModal').classList.remove('active');
+                iconPickerTarget = 'main'; // reset so closeIconPicker won't cancel pin
+            } else {
+                // 'qa' or 'pin_qa'
+                document.getElementById('qa_fruitType').value = fullValue;
+                document.getElementById('qa_selectedEmoji').textContent = emoji;
+                document.getElementById('qa_selectedLabel').textContent = name;
+
+                document.getElementById('iconPickerModal').classList.remove('active');
+
+                if (prefix === 'pin_qa' && pendingPinCoords) {
+                    // Pin flow: now open the quick-add modal with coords + fruit pre-filled
+                    const coords = pendingPinCoords;
+                    pendingPinCoords = null;
+                    iconPickerTarget = 'qa'; // reset before opening quick-add
+                    openQuickAddModal(coords, fullValue);
+                } else {
+                    iconPickerTarget = 'qa';
+                }
+            }
+        }
+
+        // Wire icon picker modal close on background click
+        document.getElementById('iconPickerModal').addEventListener('click', function(e) {
+            if (e.target === this) closeIconPicker();
+        });
+
+        // ===== PHOTO CAPTURE =====
+        function handlePhotoInput(inputEl, previewId, removeBtnId, dataFieldId) {
+            const file = inputEl.files[0];
+            if (!file) return;
+            if (file.size > 8 * 1024 * 1024) {
+                showNotification('Photo is too large (max 8MB). Please choose a smaller image.', 'error');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64 = e.target.result;
+                const preview = document.getElementById(previewId);
+                const removeBtn = document.getElementById(removeBtnId);
+                const dataField = document.getElementById(dataFieldId);
+                preview.src = base64;
+                preview.classList.add('has-image');
+                removeBtn.style.display = 'block';
+                dataField.value = base64;
+            };
+            reader.readAsDataURL(file);
+            // Reset so same file can be re-selected
+            inputEl.value = '';
+        }
+
+        function removePhoto(previewId, removeBtnId, dataFieldId) {
+            const preview = document.getElementById(previewId);
+            const removeBtn = document.getElementById(removeBtnId);
+            const dataField = document.getElementById(dataFieldId);
+            preview.src = '';
+            preview.classList.remove('has-image');
+            removeBtn.style.display = 'none';
+            dataField.value = '';
+        }
+
+        // Reset photo fields in quick-add modal
+        function resetQuickAddPhoto() {
+            removePhoto('qa_preview','qa_removeBtn','qa_photoData');
+        }
+
+        // Reset icon picker display for a form
+        function resetIconPicker(prefix) {
+            if (prefix === 'main') {
+                document.getElementById('fruitType').value = '';
+                document.getElementById('main_selectedEmoji').textContent = '🌳';
+                document.getElementById('main_selectedLabel').textContent = 'Select a tree type…';
+            } else {
+                document.getElementById('qa_fruitType').value = '';
+                document.getElementById('qa_selectedEmoji').textContent = '🌳';
+                document.getElementById('qa_selectedLabel').textContent = 'Select a tree type…';
+            }
+        }
+
+        // ===== SIMPLE NOTIFICATION =====
+        function showNotification(message, type = 'success') {
+            let notif = document.getElementById('appNotification');
+            if (!notif) {
+                notif = document.createElement('div');
+                notif.id = 'appNotification';
+                notif.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:14px 28px;border-radius:10px;font-weight:700;font-size:15px;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,0.25);transition:opacity 0.4s;pointer-events:none;';
+                document.body.appendChild(notif);
+            }
+            notif.textContent = message;
+            notif.style.background = type === 'success' ? '#28a745' : '#dc3545';
+            notif.style.color = 'white';
+            notif.style.opacity = '1';
+            clearTimeout(notif._timeout);
+            notif._timeout = setTimeout(() => { notif.style.opacity = '0'; }, 3200);
+        }
+
+        // ---- PIN MODE ----
+        let pinModeActive = false;
+        let tempPinMarker = null;
+        let pendingPinCoords = null; // stores coordStr while fruit picker is open
+
+        function togglePinMode() {
+            pinModeActive = !pinModeActive;
+            const btn = document.getElementById('pinModeBtn');
+            const label = document.getElementById('pinModeLabel');
+            const mapEl = document.getElementById('map');
+
+            if (pinModeActive) {
+                btn.classList.add('active');
+                label.textContent = 'Click map to pin...';
+                mapEl.classList.add('pin-cursor');
+                // Make leaflet container also crosshair
+                if (map) map.getContainer().style.cursor = 'crosshair';
+            } else {
+                btn.classList.remove('active');
+                label.textContent = 'Pin Tree Here';
+                mapEl.classList.remove('pin-cursor');
+                if (map) map.getContainer().style.cursor = '';
+                removeTempPin();
+            }
+        }
+
+        function removeTempPin() {
+            if (tempPinMarker && map) {
+                map.removeLayer(tempPinMarker);
+                tempPinMarker = null;
+            }
+        }
+
+        function attachMapPinListener() {
+            if (!map) return;
+            map.on('click', function(e) {
+                if (!pinModeActive) return;
+
+                const lat = e.latlng.lat.toFixed(6);
+                const lng = e.latlng.lng.toFixed(6);
+                const coordStr = `${lat}, ${lng}`;
+
+                // Remove old temp pin
+                removeTempPin();
+
+                // Drop a pulsing temp pin marker
+                const tempIcon = L.divIcon({
+                    className: 'custom-marker',
+                    html: `<div class="tree-marker" style="background-color:#ff6b35;font-size:20px;width:36px;height:36px;animation:glow 1s infinite;border-color:#ff6b35;">📍</div>`,
+                    iconSize: [36, 36],
+                    iconAnchor: [18, 18]
+                });
+                tempPinMarker = L.marker([lat, lng], { icon: tempIcon, zIndexOffset: 9999 }).addTo(map);
+
+                // Store coords and open fruit picker FIRST
+                pendingPinCoords = coordStr;
+                openIconPicker('pin_qa');
+            });
+        }
+
+        function openQuickAddModal(coordStr, preFillFruit = null) {
+            document.getElementById('pinnedCoordsDisplay').textContent = coordStr;
+            document.getElementById('qa_coordinates').value = coordStr;
+            // Auto-generate a suggested ID
+            const nextNum = String(trees.length + 1).padStart(3, '0');
+            document.getElementById('qa_treeId').value = `TREE-${nextNum}`;
+            // Clear other fields
+            ['qa_variety','qa_location','qa_notes'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('qa_healthStatus').value = '';
+            document.getElementById('qa_height').value = '';
+            document.getElementById('qa_diameter').value = '';
+            document.getElementById('qa_plantedDate').value = '';
+
+            // Apply pre-filled fruit type if provided (from pin flow), else reset
+            if (preFillFruit) {
+                const parts = preFillFruit.split(' ');
+                const emoji = parts[0];
+                const label = parts.slice(1).join(' ');
+                document.getElementById('qa_fruitType').value = preFillFruit;
+                document.getElementById('qa_selectedEmoji').textContent = emoji;
+                document.getElementById('qa_selectedLabel').textContent = label;
+            } else {
+                resetIconPicker('qa');
+            }
+
+            resetQuickAddPhoto();
+            document.getElementById('quickAddModal').classList.add('active');
+        }
+
+        function closeQuickAddModal() {
+            document.getElementById('quickAddModal').classList.remove('active');
+            // Remove temp pin and exit pin mode when cancelled
+            removeTempPin();
+            if (pinModeActive) togglePinMode();
+        }
+
+        async function submitQuickAddTree(event) {
+            event.preventDefault();
+            const t = translations[currentLang];
+
+            const newTree = {
+                id: document.getElementById('qa_treeId').value.trim(),
+                fruitType: document.getElementById('qa_fruitType').value.trim(),
+                variety: document.getElementById('qa_variety').value.trim(),
+                plantedDate: document.getElementById('qa_plantedDate').value,
+                height: parseFloat(document.getElementById('qa_height').value) || null,
+                diameter: parseFloat(document.getElementById('qa_diameter').value) || null,
+                location: document.getElementById('qa_location').value.trim(),
+                coordinates: document.getElementById('qa_coordinates').value.trim(),
+                healthStatus: document.getElementById('qa_healthStatus').value,
+                notes: document.getElementById('qa_notes').value.trim(),
+                photo: document.getElementById('qa_photoData').value || null,
+                dateAdded: new Date().toISOString()
+            };
+
+            // Check for duplicate ID
+            if (trees.find(tree => tree.id === newTree.id)) {
+                alert(`Tree ID "${newTree.id}" already exists. Please use a unique ID.`);
+                return;
+            }
+
+            await saveTree(newTree);
+
+            // Add marker on map and remove temp pin
+            removeTempPin();
+            if (map) addMarkerForTree(newTree);
+
+            // Update UI
+            updateDashboard();
+            updateReports();
+            updateFruitFilters();
+            updateTreeList();
+            renderTrees();
+
+            // Close modal & exit pin mode
+            document.getElementById('quickAddModal').classList.remove('active');
+            if (pinModeActive) togglePinMode();
+
+            showNotification(`🌳 ${newTree.fruitType} (${newTree.id}) added at pinned location!`, 'success');
+        }
+
+        // Wire up quick-add modal close on background click
+        document.getElementById('quickAddModal').addEventListener('click', function(e) {
+            if (e.target === this) closeQuickAddModal();
+        });
+
+        // ---- END PIN MODE ----
+
         // Add marker for a single tree
         function addMarkerForTree(tree) {
             const coords = parseCoordinates(tree.coordinates);
@@ -2130,6 +2850,7 @@ window.addEventListener('load', async function() {
             const t = translations[currentLang];
             return `
                 <div style="min-width: 200px;">
+                    ${tree.photo ? `<img src="${tree.photo}" style="width:100%;max-height:120px;object-fit:cover;border-radius:6px;margin-bottom:8px;">` : ''}
                     <h3 style="margin: 0 0 10px 0; color: #2d5016;">${getFruitIcon(tree.fruitType)} ${tree.fruitType}</h3>
                     <p style="margin: 5px 0;"><strong>${t.labelId}</strong> ${tree.id}</p>
                     ${tree.variety ? `<p style="margin: 5px 0;"><strong>${t.labelVariety}</strong> ${tree.variety}</p>` : ''}
@@ -2361,12 +3082,15 @@ window.addEventListener('load', async function() {
                 coordinates: coords,
                 healthStatus: document.getElementById('healthStatus').value,
                 notes: document.getElementById('notes').value,
+                photo: document.getElementById('main_photoData').value || null,
                 dateAdded: new Date().toISOString()
             };
             
             await saveTree(tree);
             
             this.reset();
+            resetIconPicker('main');
+            removePhoto('main_preview','main_removeBtn','main_photoData');
             alert(t.msgTreeAdded);
             
             updateDashboard();
@@ -2415,6 +3139,7 @@ window.addEventListener('load', async function() {
             
             return `
                 <div class="tree-card">
+                    ${tree.photo ? `<img src="${tree.photo}" style="width:100%;height:130px;object-fit:cover;border-radius:8px;margin-bottom:12px;border:1px solid var(--border-color);">` : ''}
                     <div class="tree-card-header">
                         <div>
                             <h3>${getFruitIcon(tree.fruitType)} ${tree.fruitType}</h3>
@@ -2514,6 +3239,10 @@ window.addEventListener('load', async function() {
             const modalBody = document.getElementById('modalBody');
             
             modalBody.innerHTML = `
+                ${tree.photo ? `
+                <div style="margin-bottom:20px;text-align:center;">
+                    <img src="${tree.photo}" style="max-width:100%;max-height:220px;object-fit:cover;border-radius:10px;border:2px solid var(--border-color);">
+                </div>` : ''}
                 <div class="form-grid">
                     <div class="form-group">
                         <label>${t.labelId}</label>
@@ -2658,72 +3387,6 @@ window.addEventListener('load', async function() {
             }
         });
     </script>
-
-<script>
-  // --- Client preview helpers (safe for GitHub Pages) ---
-  function dismissClientPreviewBar() {
-    const bar = document.getElementById('clientPreviewTopBar');
-    if (bar) bar.style.display = 'none';
-    try { localStorage.setItem('tts_clientPreviewBarDismissed', '1'); } catch(e) {}
-  }
-
-  function maybeRestoreClientPreviewBar() {
-    try {
-      const dismissed = localStorage.getItem('tts_clientPreviewBarDismissed') === '1';
-      const bar = document.getElementById('clientPreviewTopBar');
-      if (bar && dismissed) bar.style.display = 'none';
-    } catch(e) {}
-  }
-
-  function resetPreviewData() {
-    if (!confirm('Reset demo data? This clears locally saved trees in this browser.')) return;
-    try {
-      localStorage.removeItem('trees');
-      localStorage.removeItem('demoDataSeeded');
-      localStorage.removeItem('tts_demoMode');
-    } catch(e) {}
-    location.reload();
-  }
-
-  function sendFeedbackEmail() {
-    const to = "tkx7pjh1@rskfc.com";
-    const subject = "Tree Tracking App — Client Preview Feedback";
-    const now = new Date();
-    const bodyLines = [
-      "Hi Zeynep,",
-      "",
-      "Feedback:",
-      "- (write your feedback here)",
-      "",
-      "Context:",
-      `- Page: ${location.href}`,
-      `- Time: ${now.toString()}`,
-      `- Browser: ${navigator.userAgent}`,
-      "",
-      "Thanks!"
-    ];
-    const body = bodyLines.join("\n");
-    const mailto = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailto;
-  }
-
-  window.addEventListener('DOMContentLoaded', maybeRestoreClientPreviewBar);
-</script>
-
-<!-- Evaluation-only footer notice -->
-<div id="evalOnlyFooter" style="position:fixed;left:14px;right:14px;bottom:14px;z-index:9998;background:rgba(17,24,39,.96);color:#fff;padding:10px 12px;border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);">
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-    <span style="font-weight:700;">Evaluation only</span>
-    <span style="opacity:.9;">Not licensed for copying, redistribution, or production use.</span>
-  </div>
-  <button onclick="dismissEvalFooter()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:8px 10px;cursor:pointer;" data-i18n="dismiss">Dismiss</button>
-</div>
-
-<script>
-function dismissEvalFooter(){var e=document.getElementById("evalOnlyFooter");e&&(e.style.display="none");try{localStorage.setItem("tts_evalFooterDismissed","1")}catch(t){}}
-function maybeRestoreEvalFooter(){try{var e=localStorage.getItem("tts_evalFooterDismissed")==="1",t=document.getElementById("evalOnlyFooter");t&&e&&(t.style.display="none")}catch(e){}}
-window.addEventListener("DOMContentLoaded",maybeRestoreEvalFooter);
-</script>
 
 </body>
 </html>
