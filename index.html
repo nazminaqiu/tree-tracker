@@ -1402,7 +1402,7 @@
 
     <!-- Tree Detail Modal -->
     <div id="treeModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width:750px;">
             <div class="modal-header">
                 <h2 data-i18n="treeDetails">Tree Details</h2>
                 <button class="close-modal" onclick="closeModal()">&times;</button>
@@ -2489,11 +2489,12 @@ window.addEventListener('load', async function() {
 
         function closeIconPicker() {
             document.getElementById('iconPickerModal').classList.remove('active');
-            // If closed mid-pin-flow without selecting, cancel the pin
+            // Only cancel the pending pin if we were in the pin flow
             if (iconPickerTarget === 'pin_qa' && pendingPinCoords) {
                 pendingPinCoords = null;
                 removeTempPin();
                 if (pinModeActive) togglePinMode();
+                iconPickerTarget = 'qa';
             }
         }
 
@@ -2518,7 +2519,7 @@ window.addEventListener('load', async function() {
             });
 
             // Get currently selected value to mark active
-            const fieldId = iconPickerTarget === 'main' ? 'fruitType' : 'qa_fruitType';
+            const fieldId = iconPickerTarget === 'main' ? 'fruitType' : (iconPickerTarget === 'detail' ? 'detail_fruitType' : 'qa_fruitType');
             const currentVal = (document.getElementById(fieldId) || {}).value || '';
 
             let html = '';
@@ -2545,9 +2546,14 @@ window.addEventListener('load', async function() {
                 document.getElementById('fruitType').value = fullValue;
                 document.getElementById('main_selectedEmoji').textContent = emoji;
                 document.getElementById('main_selectedLabel').textContent = name;
-                // Just close picker — user stays on the Add Tree form
                 document.getElementById('iconPickerModal').classList.remove('active');
-                iconPickerTarget = 'main'; // reset so closeIconPicker won't cancel pin
+                iconPickerTarget = 'main';
+            } else if (prefix === 'detail') {
+                document.getElementById('detail_fruitType').value = fullValue;
+                document.getElementById('detail_selectedEmoji').textContent = emoji;
+                document.getElementById('detail_selectedLabel').textContent = name;
+                document.getElementById('iconPickerModal').classList.remove('active');
+                iconPickerTarget = 'detail';
             } else {
                 // 'qa' or 'pin_qa'
                 document.getElementById('qa_fruitType').value = fullValue;
@@ -2557,10 +2563,9 @@ window.addEventListener('load', async function() {
                 document.getElementById('iconPickerModal').classList.remove('active');
 
                 if (prefix === 'pin_qa' && pendingPinCoords) {
-                    // Pin flow: now open the quick-add modal with coords + fruit pre-filled
                     const coords = pendingPinCoords;
                     pendingPinCoords = null;
-                    iconPickerTarget = 'qa'; // reset before opening quick-add
+                    iconPickerTarget = 'qa';
                     openQuickAddModal(coords, fullValue);
                 } else {
                     iconPickerTarget = 'qa';
@@ -3233,71 +3238,156 @@ window.addEventListener('load', async function() {
         document.getElementById('sortBy').addEventListener('change', renderTrees);
 
         // View tree details - Updated with Translation
+        // Track which tree is open in the detail modal
+        let currentDetailTreeId = null;
+
         function viewTreeDetails(tree) {
             const t = translations[currentLang];
             const modal = document.getElementById('treeModal');
             const modalBody = document.getElementById('modalBody');
-            
+            currentDetailTreeId = tree.id;
+
             modalBody.innerHTML = `
-                ${tree.photo ? `
-                <div style="margin-bottom:20px;text-align:center;">
-                    <img src="${tree.photo}" style="max-width:100%;max-height:220px;object-fit:cover;border-radius:10px;border:2px solid var(--border-color);">
-                </div>` : ''}
+                <!-- Photo section -->
+                <div class="photo-capture-section" style="margin-bottom:22px;">
+                    <span class="photo-capture-label">📸 Tree Photo</span>
+                    <div class="photo-capture-btns">
+                        <button type="button" class="btn-photo" onclick="document.getElementById('detail_cameraInput').click()">📷 Take Photo</button>
+                        <button type="button" class="btn-photo" onclick="document.getElementById('detail_galleryInput').click()">🖼️ Gallery</button>
+                    </div>
+                    <input type="file" id="detail_cameraInput" accept="image/*" capture="environment" style="display:none"
+                        onchange="handlePhotoInput(this,'detail_preview','detail_removeBtn','detail_photoData')">
+                    <input type="file" id="detail_galleryInput" accept="image/*" style="display:none"
+                        onchange="handlePhotoInput(this,'detail_preview','detail_removeBtn','detail_photoData')">
+                    <input type="hidden" id="detail_photoData" value="${tree.photo || ''}">
+                    <div class="photo-preview-wrap">
+                        <img id="detail_preview" class="photo-preview ${tree.photo ? 'has-image' : ''}"
+                             src="${tree.photo || ''}" alt="Tree photo">
+                        <button type="button" class="btn-remove-photo" id="detail_removeBtn"
+                                style="display:${tree.photo ? 'block' : 'none'}"
+                                onclick="removePhoto('detail_preview','detail_removeBtn','detail_photoData')">✕</button>
+                    </div>
+                </div>
+
+                <!-- Editable fields -->
                 <div class="form-grid">
                     <div class="form-group">
                         <label>${t.labelId}</label>
-                        <input type="text" value="${tree.id}" readonly>
+                        <input type="text" id="detail_id" value="${tree.id}" readonly
+                               style="background:var(--bg-lighter);opacity:0.7;cursor:not-allowed;">
                     </div>
                     <div class="form-group">
                         <label>${t.labelFruit}</label>
-                        <input type="text" value="${getFruitIcon(tree.fruitType)} ${tree.fruitType}" readonly>
+                        <input type="hidden" id="detail_fruitType" value="${tree.fruitType}">
+                        <div class="icon-picker-trigger" onclick="openIconPicker('detail')" tabindex="0">
+                            <span class="selected-emoji" id="detail_selectedEmoji">${getFruitIcon(tree.fruitType)}</span>
+                            <span id="detail_selectedLabel" style="flex:1;">${tree.fruitType.replace(/^\S+\s/,'') || tree.fruitType}</span>
+                            <span class="trigger-arrow">▾</span>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label>${t.labelVariety}</label>
-                        <input type="text" value="${tree.variety || 'N/A'}" readonly>
+                        <input type="text" id="detail_variety" value="${tree.variety || ''}">
                     </div>
                     <div class="form-group">
                         <label>${t.labelHealth}</label>
-                        <input type="text" value="${getTranslatedStatus(tree.healthStatus)}" readonly>
+                        <select id="detail_healthStatus">
+                            <option value="healthy" ${tree.healthStatus === 'healthy' ? 'selected' : ''}>${t.statusHealthy}</option>
+                            <option value="fair"    ${tree.healthStatus === 'fair'    ? 'selected' : ''}>${t.statusFair}</option>
+                            <option value="poor"    ${tree.healthStatus === 'poor'    ? 'selected' : ''}>${t.statusPoor}</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label>${t.labelHeight}</label>
-                        <input type="text" value="${tree.height ? tree.height + 'm' : 'N/A'}" readonly>
+                        <input type="number" id="detail_height" step="0.1" value="${tree.height || ''}">
                     </div>
                     <div class="form-group">
                         <label>${t.labelDiameter}</label>
-                        <input type="text" value="${tree.diameter ? tree.diameter + 'cm' : 'N/A'}" readonly>
+                        <input type="number" id="detail_diameter" step="0.1" value="${tree.diameter || ''}">
                     </div>
                     <div class="form-group">
                         <label>${t.labelLocation}</label>
-                        <input type="text" value="${tree.location || 'N/A'}" readonly>
+                        <input type="text" id="detail_location" value="${tree.location || ''}">
                     </div>
                     <div class="form-group">
                         <label>${t.labelCoords}</label>
-                        <input type="text" value="${tree.coordinates || 'N/A'}" readonly>
+                        <input type="text" id="detail_coordinates" value="${tree.coordinates || ''}">
                     </div>
                     <div class="form-group">
                         <label>${t.labelPlanted}</label>
-                        <input type="text" value="${tree.plantedDate ? new Date(tree.plantedDate).toLocaleDateString() : 'N/A'}" readonly>
+                        <input type="date" id="detail_plantedDate" value="${tree.plantedDate || ''}">
                     </div>
                     <div class="form-group">
                         <label>${t.labelDateAdded}</label>
-                        <input type="text" value="${new Date(tree.dateAdded).toLocaleString()}" readonly>
+                        <input type="text" value="${new Date(tree.dateAdded).toLocaleString()}" readonly
+                               style="background:var(--bg-lighter);opacity:0.7;cursor:not-allowed;">
                     </div>
                 </div>
-                ${tree.notes ? `
-                <div class="form-group" style="margin-top: 20px;">
+                <div class="form-group" style="margin-top:16px;">
                     <label>${t.labelNotes}</label>
-                    <textarea readonly>${tree.notes}</textarea>
+                    <textarea id="detail_notes">${tree.notes || ''}</textarea>
                 </div>
-                ` : ''}
+
+                <!-- Actions -->
+                <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:20px;">
+                    <button class="btn btn-primary" onclick="saveTreeDetails()">💾 Save Changes</button>
+                    <button class="btn btn-danger"  onclick="deleteTree('${tree.id}')">🗑️ Delete Tree</button>
+                    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                </div>
             `;
-            
+
             modal.classList.add('active');
+        }
+
+        async function saveTreeDetails() {
+            const t = translations[currentLang];
+            const treeIndex = trees.findIndex(tr => tr.id === currentDetailTreeId);
+            if (treeIndex === -1) return;
+
+            const coords = document.getElementById('detail_coordinates').value;
+            if (coords && !parseCoordinates(coords)) {
+                alert('Invalid GPS coordinates format. Please use: latitude, longitude');
+                return;
+            }
+
+            // Merge updates into existing tree object
+            const updated = {
+                ...trees[treeIndex],
+                fruitType:    document.getElementById('detail_fruitType').value || trees[treeIndex].fruitType,
+                variety:      document.getElementById('detail_variety').value,
+                healthStatus: document.getElementById('detail_healthStatus').value,
+                height:       parseFloat(document.getElementById('detail_height').value) || null,
+                diameter:     parseFloat(document.getElementById('detail_diameter').value) || null,
+                location:     document.getElementById('detail_location').value,
+                coordinates:  coords,
+                plantedDate:  document.getElementById('detail_plantedDate').value,
+                notes:        document.getElementById('detail_notes').value,
+                photo:        document.getElementById('detail_photoData').value || null,
+            };
+
+            trees[treeIndex] = updated;
+            await saveTrees();
+
+            // Refresh marker on map
+            if (markers[updated.id]) {
+                map.removeLayer(markers[updated.id]);
+                delete markers[updated.id];
+            }
+            if (map && updated.coordinates) addMarkerForTree(updated);
+
+            updateDashboard();
+            updateReports();
+            updateFruitFilters();
+            updateTreeList();
+            renderTrees();
+
+            closeModal();
+            showNotification(`✅ ${updated.fruitType} (${updated.id}) updated successfully!`, 'success');
         }
 
         function closeModal() {
             document.getElementById('treeModal').classList.remove('active');
+            currentDetailTreeId = null;
         }
 
         async function deleteTree(treeId) {
