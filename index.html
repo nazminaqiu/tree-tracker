@@ -11,6 +11,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <!-- Firestore -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <!-- No extra SDK needed for Cloudinary – uses fetch() -->
     
     <style>
         :root {
@@ -1692,28 +1693,64 @@
         //
         // Tip: if you don't want Firestore, just leave firebaseConfig as-is and the app will use localStorage.
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyDLFiKgciBh-RyAU4DkpZpRQnc84o28m0E",
+            authDomain: "tree-tracker-b37f7.firebaseapp.com",
+            projectId: "tree-tracker-b37f7",
+            storageBucket: "tree-tracker-b37f7.firebasestorage.app",
+            messagingSenderId: "521971666623",
+            appId: "1:521971666623:web:0988be18f868dd2b2a000a",
+            measurementId: "G-0YDT37HY4T"
         };
 
         // Initialize Firebase
         let db = null;
         let useFirestore = false;
+        let firestoreUnsubscribe = null; // real-time listener handle
+
+        // Validate that the config has been filled in with real values
+        function isFirebaseConfigured(cfg) {
+            const placeholders = ['YOUR_API_KEY', 'YOUR_PROJECT_ID', 'YOUR_MESSAGING_SENDER_ID', 'YOUR_APP_ID'];
+            return cfg && cfg.apiKey && !placeholders.some(p => Object.values(cfg).includes(p));
+        }
 
         try {
-            if (typeof firebase !== 'undefined') {
+            if (typeof firebase !== 'undefined' && isFirebaseConfigured(firebaseConfig)) {
                 firebase.initializeApp(firebaseConfig);
                 db = firebase.firestore();
+                // Enable offline persistence so the app works without network
+                db.enablePersistence({ synchronizeTabs: true })
+                  .catch(err => console.warn('Offline persistence unavailable:', err.code));
                 useFirestore = true;
-                console.log('Firestore initialized successfully');
+                console.log('✅ Firestore initialized successfully');
+            } else if (!isFirebaseConfigured(firebaseConfig)) {
+                console.warn('⚠️ Firebase config contains placeholder values. Using localStorage. Replace firebaseConfig values to enable Firestore.');
             }
         } catch (error) {
             console.warn('Firestore not configured, using localStorage:', error);
             useFirestore = false;
+        }
+
+        // Attach a real-time Firestore listener so all devices stay in sync
+        function attachFirestoreListener() {
+            if (!useFirestore) return;
+            if (firestoreUnsubscribe) firestoreUnsubscribe(); // detach previous if any
+            firestoreUnsubscribe = db.collection('trees').onSnapshot(snapshot => {
+                // Ignore the first snapshot that fires synchronously on attach (we already loaded)
+                if (!window.__firestoreListenerReady) { window.__firestoreListenerReady = true; return; }
+                trees = snapshot.docs.map(doc => ({ ...doc.data(), firestoreId: doc.id }));
+                localStorage.setItem('trees', JSON.stringify(trees));
+                updateDashboard();
+                updateReports();
+                updateFruitFilters();
+                updateTreeList();
+                renderTrees();
+                // Refresh map markers
+                Object.keys(markers).forEach(id => {
+                    if (map && markers[id]) { map.removeLayer(markers[id]); delete markers[id]; }
+                });
+                trees.forEach(t => { if (map && t.coordinates) addMarkerForTree(t); });
+                console.log('🔄 Firestore real-time update: synced', trees.length, 'trees');
+            }, err => console.error('Firestore listener error:', err));
         }
 
         // Update database status indicator
@@ -1724,6 +1761,9 @@
 
             if (useFirestore) {
                 statusEl.innerHTML = currentLang === 'en' ? '🟢 Connected to Firestore' : '🟢 Bersambung ke Firestore';
+            } else if (!isFirebaseConfigured(firebaseConfig)) {
+                statusEl.innerHTML = '🟡 Local Storage (add Firebase config)';
+                statusEl.title = 'Replace firebaseConfig values in the HTML to enable Firestore';
             } else {
                 statusEl.innerHTML = t.dbStatus;
             }
@@ -2125,7 +2165,10 @@ window.addEventListener('load', async function() {
                 try {
                     const snapshot = await db.collection('trees').get();
                     trees = snapshot.docs.map(doc => ({ ...doc.data(), firestoreId: doc.id }));
-                    console.log(`Loaded ${trees.length} trees from Firestore`);
+                    localStorage.setItem('trees', JSON.stringify(trees)); // keep local backup in sync
+                    console.log(`✅ Loaded ${trees.length} trees from Firestore`);
+                    // Attach real-time listener AFTER initial load to avoid duplicate render
+                    attachFirestoreListener();
                 } catch (error) {
                     console.error('Error loading from Firestore:', error);
                     // Fallback to localStorage
@@ -2137,55 +2180,101 @@ window.addEventListener('load', async function() {
         }
 
         // Save all trees to Firestore and localStorage
+        // NOTE: This is used for bulk-seed (sample data). For edits/deletes, use saveTree / deleteTreeFromDB.
         async function saveTrees() {
             // Always save to localStorage as backup
             localStorage.setItem('trees', JSON.stringify(trees));
-            
+
             if (useFirestore) {
                 try {
-                    // Save to Firestore
+                    // Only write trees that don't have a Firestore doc ID yet (new / seeded)
+                    const newTrees = trees.filter(t => !t.firestoreId);
+                    if (newTrees.length === 0) return;
+
                     const batch = db.batch();
-                    
-                    for (const tree of trees) {
+                    for (const tree of newTrees) {
                         const treeData = { ...tree };
-                        delete treeData.firestoreId; // Remove local ID before saving
-                        
-                        if (tree.firestoreId) {
-                            // Update existing
-                            const docRef = db.collection('trees').doc(tree.firestoreId);
-                            batch.update(docRef, treeData);
-                        } else {
-                            // Create new
-                            const docRef = db.collection('trees').doc();
-                            batch.set(docRef, treeData);
-                            tree.firestoreId = docRef.id;
-                        }
+                        delete treeData.firestoreId;
+                        const docRef = db.collection('trees').doc();
+                        batch.set(docRef, treeData);
+                        tree.firestoreId = docRef.id;
                     }
-                    
                     await batch.commit();
-                    console.log('Trees saved to Firestore');
+                    // Update localStorage with the newly assigned firestoreIds
+                    localStorage.setItem('trees', JSON.stringify(trees));
+                    console.log(`✅ Batch-saved ${newTrees.length} new trees to Firestore`);
                 } catch (error) {
                     console.error('Error saving to Firestore:', error);
                 }
             }
         }
 
-        // Save a single tree
+        // Save a single new tree
         async function saveTree(tree) {
+            // Upload pending photo to Cloudinary before saving
+            const pendingFieldId = pendingPhotoFiles['main_photoData']
+                ? 'main_photoData'
+                : pendingPhotoFiles['qa_photoData']
+                ? 'qa_photoData'
+                : null;
+
+            if (pendingFieldId) {
+                const url = await uploadPhotoToCloudinary(pendingPhotoFiles[pendingFieldId], tree.id);
+                tree.photo = url;
+                delete pendingPhotoFiles[pendingFieldId];
+            } else if (tree.photo === '__pending__') {
+                tree.photo = null;
+            }
+
             // Add to local array
             trees.push(tree);
-            
-            // Save to localStorage
             localStorage.setItem('trees', JSON.stringify(trees));
-            
+
             // Save to Firestore
             if (useFirestore) {
                 try {
-                    const docRef = await db.collection('trees').add(tree);
+                    const treeData = { ...tree };
+                    delete treeData.firestoreId;
+                    const docRef = await db.collection('trees').add(treeData);
                     tree.firestoreId = docRef.id;
-                    console.log('Tree saved to Firestore with ID:', docRef.id);
+                    localStorage.setItem('trees', JSON.stringify(trees));
+                    console.log('✅ Tree saved to Firestore with ID:', docRef.id);
                 } catch (error) {
                     console.error('Error saving tree to Firestore:', error);
+                    showNotification('⚠️ Tree saved locally but Firestore sync failed. Check your connection.', 'warning');
+                }
+            }
+        }
+
+        // Update an existing tree document in Firestore (with optional photo change)
+        // oldPhotoUrl: the previously stored photo URL (informational only — Cloudinary free tier doesn't support API deletion)
+        async function updateTreeInDB(tree, oldPhotoUrl) {
+            // Resolve photo: upload new file if pending, or keep/clear existing URL
+            tree.photo = await resolvePendingPhoto('detail_photoData', tree.id, oldPhotoUrl);
+
+            // Persist locally
+            localStorage.setItem('trees', JSON.stringify(trees));
+
+            if (useFirestore && tree.firestoreId) {
+                try {
+                    const treeData = { ...tree };
+                    delete treeData.firestoreId;
+                    await db.collection('trees').doc(tree.firestoreId).update(treeData);
+                    console.log('✅ Tree updated in Firestore:', tree.firestoreId);
+                } catch (error) {
+                    console.error('Error updating tree in Firestore:', error);
+                    showNotification('⚠️ Tree saved locally but Firestore sync failed. Check your connection.', 'warning');
+                }
+            } else if (useFirestore && !tree.firestoreId) {
+                try {
+                    const treeData = { ...tree };
+                    delete treeData.firestoreId;
+                    const docRef = await db.collection('trees').add(treeData);
+                    tree.firestoreId = docRef.id;
+                    localStorage.setItem('trees', JSON.stringify(trees));
+                    console.log('✅ Tree created in Firestore:', docRef.id);
+                } catch (error) {
+                    console.error('Error creating tree in Firestore:', error);
                 }
             }
         }
@@ -2194,23 +2283,27 @@ window.addEventListener('load', async function() {
         async function deleteTreeFromDB(treeId) {
             const treeIndex = trees.findIndex(t => t.id === treeId);
             if (treeIndex === -1) return;
-            
+
             const tree = trees[treeIndex];
-            
-            // Remove from local array
+
+            // Remove from local array and localStorage
             trees.splice(treeIndex, 1);
-            
-            // Save to localStorage
             localStorage.setItem('trees', JSON.stringify(trees));
-            
-            // Delete from Firestore
+
+            // Note: Cloudinary free tier doesn't support API-based deletion.
+            // Photos remain in Cloudinary but are no longer referenced anywhere.
+
+            // Delete document from Firestore
             if (useFirestore && tree.firestoreId) {
                 try {
                     await db.collection('trees').doc(tree.firestoreId).delete();
-                    console.log('Tree deleted from Firestore');
+                    console.log('✅ Tree deleted from Firestore:', tree.firestoreId);
                 } catch (error) {
                     console.error('Error deleting from Firestore:', error);
+                    showNotification('⚠️ Tree removed locally but Firestore sync failed. Check your connection.', 'warning');
                 }
+            } else if (useFirestore && !tree.firestoreId) {
+                console.warn('Tree had no firestoreId — only removed from localStorage');
             }
         }
 
@@ -2578,7 +2671,26 @@ window.addEventListener('load', async function() {
             if (e.target === this) closeIconPicker();
         });
 
-        // ===== PHOTO CAPTURE =====
+        // ===== CLOUDINARY PHOTO UPLOAD =====
+        // ---------------------------------------------------------------
+        // Setup (one-time):
+        //   1. Sign up free at https://cloudinary.com
+        //   2. Dashboard → Settings → Upload → "Add upload preset"
+        //      Set Signing Mode = "Unsigned", then Save.
+        //   3. Fill in your values below:
+        // ---------------------------------------------------------------
+        const CLOUDINARY_CLOUD_NAME = 'dymsbpppa';   // e.g. 'dxyz123abc'
+        const CLOUDINARY_UPLOAD_PRESET = 'tree_tracker'; // e.g. 'tree_tracker'
+        // ---------------------------------------------------------------
+
+        function isCloudinaryConfigured() {
+            return CLOUDINARY_CLOUD_NAME !== 'YOUR_CLOUD_NAME' &&
+                   CLOUDINARY_UPLOAD_PRESET !== 'YOUR_UPLOAD_PRESET';
+        }
+
+        // Tracks the raw File object for each photo field (keyed by dataFieldId)
+        const pendingPhotoFiles = {};
+
         function handlePhotoInput(inputEl, previewId, removeBtnId, dataFieldId) {
             const file = inputEl.files[0];
             if (!file) return;
@@ -2586,20 +2698,22 @@ window.addEventListener('load', async function() {
                 showNotification('Photo is too large (max 8MB). Please choose a smaller image.', 'error');
                 return;
             }
+            // Store the File for later upload
+            pendingPhotoFiles[dataFieldId] = file;
+
+            // Show a local base64 preview immediately (never sent to Firestore)
             const reader = new FileReader();
             reader.onload = function(e) {
-                const base64 = e.target.result;
                 const preview = document.getElementById(previewId);
                 const removeBtn = document.getElementById(removeBtnId);
                 const dataField = document.getElementById(dataFieldId);
-                preview.src = base64;
+                preview.src = e.target.result;
                 preview.classList.add('has-image');
                 removeBtn.style.display = 'block';
-                dataField.value = base64;
+                dataField.value = '__pending__'; // placeholder until upload completes
             };
             reader.readAsDataURL(file);
-            // Reset so same file can be re-selected
-            inputEl.value = '';
+            inputEl.value = ''; // reset so same file can be re-selected
         }
 
         function removePhoto(previewId, removeBtnId, dataFieldId) {
@@ -2610,6 +2724,63 @@ window.addEventListener('load', async function() {
             preview.classList.remove('has-image');
             removeBtn.style.display = 'none';
             dataField.value = '';
+            delete pendingPhotoFiles[dataFieldId];
+        }
+
+        /**
+         * Upload a photo File to Cloudinary using an unsigned upload preset.
+         * Returns the secure HTTPS URL string, or null on failure.
+         */
+        async function uploadPhotoToCloudinary(file, treeId) {
+            if (!isCloudinaryConfigured()) {
+                showNotification('⚠️ Cloudinary not configured. Add your Cloud Name and Upload Preset.', 'warning');
+                return null;
+            }
+            if (!file) return null;
+            try {
+                showNotification('📤 Uploading photo…', 'info');
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                formData.append('folder', `tree-tracker/${treeId}`);
+                formData.append('context', `treeId=${treeId}`);
+
+                const res = await fetch(
+                    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+                    { method: 'POST', body: formData }
+                );
+                if (!res.ok) throw new Error(`Cloudinary error: ${res.status}`);
+                const data = await res.json();
+                console.log('✅ Photo uploaded to Cloudinary:', data.secure_url);
+                return data.secure_url;
+            } catch (err) {
+                console.error('Cloudinary upload failed:', err);
+                showNotification('⚠️ Photo upload failed. Tree saved without photo.', 'warning');
+                return null;
+            }
+        }
+
+        /**
+         * Resolve any pending photo file for a given field ID.
+         * Returns the final URL to store (existing URL, new URL, or null).
+         * oldPhotoUrl is the current stored URL (kept if no change).
+         */
+        async function resolvePendingPhoto(dataFieldId, treeId, oldPhotoUrl) {
+            if (pendingPhotoFiles[dataFieldId]) {
+                // New file selected — upload it
+                const url = await uploadPhotoToCloudinary(pendingPhotoFiles[dataFieldId], treeId);
+                delete pendingPhotoFiles[dataFieldId];
+                return url; // may be null if upload failed
+            }
+            const fieldValue = document.getElementById(dataFieldId)?.value ?? '';
+            if (fieldValue === '' || fieldValue === null) {
+                return null; // photo was explicitly removed
+            }
+            if (fieldValue === '__pending__') {
+                return null; // marker but no file — clear
+            }
+            // fieldValue is an existing URL — unchanged
+            return oldPhotoUrl;
         }
 
         // Reset photo fields in quick-add modal
@@ -3350,6 +3521,10 @@ window.addEventListener('load', async function() {
                 return;
             }
 
+            // Capture old photo URL before overwriting (needed to delete from Storage)
+            const oldPhotoUrl = trees[treeIndex].photo || null;
+            const photoFieldValue = document.getElementById('detail_photoData').value;
+
             // Merge updates into existing tree object
             const updated = {
                 ...trees[treeIndex],
@@ -3362,11 +3537,13 @@ window.addEventListener('load', async function() {
                 coordinates:  coords,
                 plantedDate:  document.getElementById('detail_plantedDate').value,
                 notes:        document.getElementById('detail_notes').value,
-                photo:        document.getElementById('detail_photoData').value || null,
+                // '__pending__' means a new file is queued; '' means photo was removed; URL = unchanged
+                photo:        photoFieldValue || null,
             };
 
             trees[treeIndex] = updated;
-            await saveTrees();
+            // Pass oldPhotoUrl so updateTreeInDB can clean up Storage if photo changed
+            await updateTreeInDB(updated, oldPhotoUrl);
 
             // Refresh marker on map
             if (markers[updated.id]) {
